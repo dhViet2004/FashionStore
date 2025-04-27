@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
-import { FaShoppingBag, FaSpinner, FaStar, FaRegStar } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
+import { FaShoppingBag, FaSpinner } from 'react-icons/fa';
 import { IoAlertCircle } from 'react-icons/io5';
+import ProductCard from './ProductCard';  // Đảm bảo bạn đã import ProductCard đúng cách
 
 const ProductsList = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
+  const [itemsPerPage, setItemsPerPage] = useState(20); // Số lượng sản phẩm mỗi trang
+  
+  const location = useLocation();
+  
+  // Lấy giá trị tham số q từ URL
+  const queryParams = new URLSearchParams(location.search);
+  const searchQuery = queryParams.get('q') || '';  // Nếu không có tham số thì mặc định là ''
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -26,22 +37,29 @@ const ProductsList = () => {
     fetchProducts();
   }, []);
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<FaStar key={i} className="text-yellow-400" />);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<FaStar key={i} className="text-yellow-400" />);
-      } else {
-        stars.push(<FaRegStar key={i} className="text-yellow-400" />);
-      }
+  useEffect(() => {
+    if (searchQuery === '') {
+      setFilteredProducts(products);
+    } else {
+      setFilteredProducts(
+        products.filter((product) =>
+          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.description.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
     }
-    return stars;
-  };
+  }, [searchQuery, products]);
+
+  // Tính số lượng sản phẩm cần hiển thị cho trang hiện tại
+  const indexOfLastProduct = currentPage * itemsPerPage;
+  const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
+  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+
+  // Xử lý chuyển trang
+  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Tính toán tổng số trang
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
 
   if (loading) {
     return (
@@ -67,54 +85,54 @@ const ProductsList = () => {
         <FaShoppingBag className="w-6 h-6 mr-2 text-blue-500" />
         <h2 className="text-2xl font-bold text-gray-800">Products List</h2>
       </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {products.map((product) => (
-          <div
-            key={product.id}
-            className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
-          >
-            <div className="relative">
-              <img
-                src={product.imageUrl}
-                alt={product.name}
-                className="w-full h-48 object-cover"
-              />
-              {product.stock < 10 && (
-                <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
-                  Low Stock
-                </span>
-              )}
-            </div>
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                {product.name}
-              </h3>
-              <p className="text-blue-600 font-bold mb-2">
-                ${product.price.toFixed(2)}
-              </p>
-              <p className="text-sm text-gray-600 mb-2">
-                {product.description}
-              </p>
-              <div className="flex items-center mb-2">
-                <div className="flex mr-2">
-                  {renderStars(product.rating)}
-                </div>
-                <span className="text-sm text-gray-500">
-                  ({product.reviews} reviews)
-                </span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">Category: {product.category}</span>
-                <span className={`font-medium ${product.stock > 10 ? 'text-green-600' : 'text-red-600'}`}>
-                  Stock: {product.stock}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+        {currentProducts.length > 0 ? (
+          currentProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />  // Sử dụng ProductCard để hiển thị mỗi sản phẩm
+          ))
+        ) : (
+          <div className="col-span-full text-center text-gray-500">No products found</div>
+        )}
+      </div>
+
+      {/* Phân trang */}
+      <div className="flex justify-center mt-6">
+        <nav>
+          <ul className="flex space-x-2">
+            <li>
+              <button
+                onClick={() => paginate(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`${currentPage !== 1 ? "cursor-pointer" : ""} px-4 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50`}
+              >
+                &lt;
+              </button>
+            </li>
+            {Array.from({ length: totalPages }, (_, index) => (
+              <li key={index}>
+                <button
+                  onClick={() => paginate(index + 1)}
+                  className={`px-4 py-2 ${currentPage === index + 1 ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700'} rounded-md cursor-pointer`}
+                >
+                  {index + 1}
+                </button>
+              </li>
+            ))}
+            <li>
+              <button
+                onClick={() => paginate(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`${currentPage !== totalPages ? 'cursor-pointer' : ""} px-4 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50`}
+              >
+                &gt;
+              </button>
+            </li>
+          </ul>
+        </nav>
       </div>
     </div>
   );
 };
 
-export default ProductsList; 
+export default ProductsList;

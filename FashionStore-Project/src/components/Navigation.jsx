@@ -13,7 +13,9 @@ const Navigation = () => {
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+    } else {
+      navigate(`/products`);
     }
   };
 
@@ -25,6 +27,17 @@ const Navigation = () => {
 
   const handleLogin = () => {
     window.location.reload();
+  };
+
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    // Tự động chuyển hướng khi người dùng nhập liệu
+    if (query.trim()) {
+      navigate(`/products?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate(`/products`);
+    }
   };
 
   return (
@@ -55,23 +68,16 @@ const Navigation = () => {
             )}
             
             {/* Search Bar */}
-            <form onSubmit={handleSearch} className="ml-8">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500"
-                >
-                  <FaSearch />
-                </button>
-              </div>
-            </form>
+            <div className="relative ml-8">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={handleSearchChange}  // Tìm kiếm theo thời gian thực
+                className="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500" />
+            </div>
           </div>
 
           {/* User Actions */}
@@ -163,7 +169,7 @@ const Navigation = () => {
                   type="text"
                   placeholder="Search products..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchChange}  // Tìm kiếm theo thời gian thực
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
@@ -189,4 +195,4 @@ const Navigation = () => {
   );
 };
 
-export default Navigation; 
+export default Navigation;

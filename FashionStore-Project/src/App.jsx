@@ -1,9 +1,13 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+
 import ProductsList from './components/ProductsList';
 import Admin from './components/Admin';
 import Navigation from './components/Navigation';
 import BannerHeader from './components/BannerHeader';
+import Products from './components/ProductCard';
+import DetailProduct from './components/DetailProduct';
+import Profile from './components/Profile';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -40,6 +44,22 @@ function App() {
               )
             }
           />
+
+          <Route             
+            path="/products"
+            element= {<ProductsList />}
+          />
+
+          <Route 
+            path="/products/:productId" 
+            element={<DetailProduct />} 
+          />
+
+          <Route
+            path='/profile'
+            element={<Profile/>}
+          />
+
         </Routes>
       </div>
     </Router>
