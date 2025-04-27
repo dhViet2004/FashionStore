@@ -13,60 +13,52 @@
       "phoneNumber": "123-456-7890"
     },
     {
-      "id": 2,
-      "username": "user",
-      "name": "Jane Smith",
-      "password": "user",
-      "role": "user",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
-      "dateCreate": "2023-03-22T08:15:00Z",
-      "address": "456 Maple Ave, Los Angeles, CA",
-      "birthday": "1992-09-14",
-      "phoneNumber": "987-654-3210"
-    },
-    {
-      "id": 3,
-      "username": "alice_wu",
-      "name": "Alice Wu",
-      "password": "alicewu789",
-      "role": "moderator",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
-      "dateCreate": "2023-06-10T14:45:10Z",
-      "address": "789 Oak St, Chicago, IL",
-      "birthday": "1988-12-01",
-      "phoneNumber": "555-123-4567"
-    },
-    {
-      "id": 4,
-      "username": "michael_nguyen",
-      "name": "Michael Nguyen",
-      "password": "nguyen1234",
-      "role": "user",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
-      "dateCreate": "2023-07-01T09:30:00Z",
-      "address": "321 Pine St, Houston, TX",
-      "birthday": "1995-07-30",
-      "phoneNumber": "222-333-4444"
-    },
-    {
-      "id": 5,
-      "username": "emily_phan",
-      "name": "Emily Phan",
-      "password": "emilypass321",
-      "role": "user",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
-      "dateCreate": "2023-08-18T16:00:00Z",
-      "address": "654 Cedar St, San Francisco, CA",
-      "birthday": "1993-03-10",
-      "phoneNumber": "111-222-3333"
-    },
-    {
       "username": "user01",
       "email": "dviet037@gmail.com",
       "password": "user01",
       "full_name": "Hoàng Việt",
       "role": "user",
       "id": 6
+    },
+    {
+      "username": "duongsatlachong",
+      "email": "duongsatlachong@gmail.com",
+      "password": "google-oauth",
+      "full_name": "DuongSatLacHong",
+      "role": "user",
+      "google_id": "114249137217624289558",
+      "id": 7,
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJUIbTQbw55fnDI0jkY_eRcUKEeH-Qlwq4uX6-877ZzLZzLXD8=s96-c"
+    },
+    {
+      "username": "dhoangviet1612",
+      "email": "dhoangviet1612@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Viet Hoang",
+      "name": "Viet Hoang",
+      "role": "user",
+      "google_id": "115058230448698672084",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocKqq_DKVbDPGvtpAEvUDAfdEhWIJsztxwCGx8hdOwyA_y_L-Lw=s96-c",
+      "dateCreate": "2025-04-27T11:40:00.564Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 8
+    },
+    {
+      "username": "danghoangviet004",
+      "email": "danghoangviet004@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Hoàng Việt Đặng",
+      "name": "Hoàng Việt Đặng",
+      "role": "user",
+      "google_id": "111378788031572884782",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJbCTgdOQMpQAJ85pDsjwJjGu4r05Km0JRTmXmz5FAsGAlRtg=s96-c",
+      "dateCreate": "2025-04-27T11:40:30.021Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 9
     }
   ],
   "products": [

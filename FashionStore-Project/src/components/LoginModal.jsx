@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
+import { FaFacebook } from 'react-icons/fa';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const LoginModal = ({ onClose, onLogin }) => {
   const navigate = useNavigate();
@@ -80,6 +83,116 @@ const LoginModal = ({ onClose, onLogin }) => {
     }
   };
 
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        // Get user info from Google
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        
+        if (!userInfoResponse.ok) {
+          throw new Error('Failed to get user info from Google');
+        }
+        
+        const userInfo = await userInfoResponse.json();
+        console.log('Google user info:', userInfo);
+        
+        // Check if user exists in our database by email or google_id
+        const checkResponse = await fetch(`http://localhost:3001/users?email=${userInfo.email}`);
+        const existingUsers = await checkResponse.json();
+        
+        if (existingUsers.length > 0) {
+          // User exists, update their Google profile picture if needed
+          const user = existingUsers[0];
+          if (userInfo.picture && (!user.imageUrl || user.imageUrl === "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg")) {
+            // Update user with Google profile picture
+            const updatedUser = {
+              ...user,
+              imageUrl: userInfo.picture,
+              google_id: userInfo.sub
+            };
+            
+            // Update user in database
+            await fetch(`http://localhost:3001/users/${user.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedUser),
+            });
+            
+            // Update localStorage with new user data
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            onLogin(updatedUser);
+          } else {
+            // Just log in with existing user data
+            localStorage.setItem('user', JSON.stringify(user));
+            onLogin(user);
+          }
+          
+          onClose();
+          if (user.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/products');
+          }
+        } else {
+          // Create new user from Google info
+          const newUser = {
+            username: userInfo.email.split('@')[0],
+            email: userInfo.email,
+            password: 'google-oauth', // Placeholder password
+            full_name: userInfo.name,
+            name: userInfo.name, // Add name field to match existing user structure
+            role: 'user',
+            google_id: userInfo.sub,
+            imageUrl: userInfo.picture || "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
+            dateCreate: new Date().toISOString(),
+            address: "Not provided",
+            birthday: "Not provided",
+            phoneNumber: "Not provided"
+          };
+          
+          const createResponse = await fetch('http://localhost:3001/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newUser),
+          });
+          
+          if (createResponse.ok) {
+            const createdUser = await createResponse.json();
+            console.log('Created user:', createdUser);
+            
+            // Store user in localStorage
+            localStorage.setItem('user', JSON.stringify(createdUser));
+            
+            // Call onLogin to update the UI
+            onLogin(createdUser);
+            
+            // Close the modal
+            onClose();
+            
+            // Navigate to appropriate page
+            navigate('/products');
+          } else {
+            console.error('Failed to create user:', await createResponse.text());
+            alert('Failed to create account with Google');
+          }
+        }
+      } catch (error) {
+        console.error('Google login error:', error);
+        alert('Error logging in with Google');
+      }
+    },
+    onError: () => {
+      alert('Google login failed');
+    }
+  });
+
+  const handleFacebookLogin = () => {
+    // TODO: Implement Facebook login
+    console.log('Facebook login clicked');
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("https://res.cloudinary.com/dh1o42tjk/image/upload/v1744710728/16be05d672b4da505d38cad34b1e2ddf_hgulp2.jpg")' }}>
@@ -136,6 +249,26 @@ const LoginModal = ({ onClose, onLogin }) => {
             >
               Sign Up
             </button>
+
+            {/* Social Login Buttons */}
+            <div className="w-full flex flex-row justify-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FcGoogle className="text-xl" />
+                <span className="text-gray-700 text-sm">Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleFacebookLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FaFacebook className="text-xl text-blue-600" />
+                <span className="text-gray-700 text-sm">Facebook</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -165,6 +298,26 @@ const LoginModal = ({ onClose, onLogin }) => {
             >
               Sign In
             </button>
+
+            {/* Social Login Buttons */}
+            <div className="w-full flex flex-row justify-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FcGoogle className="text-xl" />
+                <span className="text-gray-700 text-sm">Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleFacebookLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FaFacebook className="text-xl text-blue-600" />
+                <span className="text-gray-700 text-sm">Facebook</span>
+              </button>
+            </div>
           </form>
         </div>
 
