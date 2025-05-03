@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaUser, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa';
 import LoginModal from './LoginModal';
+import { useCart } from '../context/CartContext';
 
 const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,6 +10,7 @@ const Navigation = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
+  const { cartItems } = useCart();
 
   // Get the display name from user object, handling both regular and Google login
   const getUserDisplayName = () => {
@@ -121,11 +123,16 @@ const Navigation = () => {
                 </Link>
                 <Link
                   to="/cart"
-                  className="text-gray-600 hover:text-blue-500 flex items-center"
+                  className="text-gray-600 hover:text-blue-500 flex items-center relative"
                   title="Cart"
                 >
                   <FaShoppingCart className="mr-1" />
                   <span className="hidden sm:inline">Cart</span>
+                  {cartItems.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {cartItems.length}
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -147,77 +154,39 @@ const Navigation = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden text-gray-600 hover:text-blue-500 p-1"
-              aria-label="Toggle menu"
+              className="md:hidden text-gray-600 hover:text-blue-500"
             >
-              {isMenuOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
+              {isMenuOpen ? <FaTimes /> : <FaBars />}
             </button>
           </div>
         </div>
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-3 border-t">
-            <nav className="flex flex-col space-y-3">
-              <Link
-                to="/"
-                className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
+          <div className="md:hidden py-4">
+            <div className="flex flex-col space-y-2">
+              <Link to="/" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
                 Home
               </Link>
-              <Link
-                to="/products"
-                className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/products" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
                 Products
               </Link>
-              <Link
-                to="/categories"
-                className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
+              <Link to="/categories" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
                 Categories
               </Link>
               {user && user.role === 'admin' && (
-                <Link
-                  to="/admin"
-                  className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors"
-                  onClick={() => setIsMenuOpen(false)}
-                >
+                <Link to="/admin" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
                   Admin Panel
                 </Link>
               )}
-            </nav>
-            {/* Mobile Search Bar */}
-            <form onSubmit={handleSearch} className="mt-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  className="w-full px-3 py-1.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500"
-                >
-                  <FaSearch />
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         )}
       </div>
 
       {/* Login Modal */}
       {showLoginModal && (
-        <LoginModal
-          onClose={() => setShowLoginModal(false)}
-          onLogin={handleLogin}
-        />
+        <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
       )}
     </nav>
   );

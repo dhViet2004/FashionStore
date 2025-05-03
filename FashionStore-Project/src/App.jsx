@@ -7,6 +7,9 @@ import Categories from './pages/categories/Categories';
 import Admin from './pages/admin/Admin';
 import DetailProduct from './components/DetailProduct';
 import Profile from './components/Profile';
+import Cart from './components/Cart';
+import LoginModal from './components/LoginModal';
+import Checkout from './components/Checkout';
 
 function App() {
   return (
@@ -21,6 +24,9 @@ function App() {
             <Route path="/categories" element={<Categories />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/login" element={<LoginModal onClose={() => window.history.back()} onLogin={() => window.location.reload()} />} />
+            <Route path="/checkout" element={<Checkout />} />
           </Routes>
         </main>
       </div>
