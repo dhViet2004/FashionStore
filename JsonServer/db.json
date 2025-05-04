@@ -107,48 +107,48 @@
   ],
   "products": [
     {
-      "id": 2,
       "name": "Slim Fit Jeans",
-      "price": 59.99,
-      "description": "Modern slim fit jeans with a comfortable stretch for all-day wear.",
       "category": "Jeans",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+      "price": 300000,
       "stock": 74,
       "rating": 4.2,
-      "reviews": 85
+      "reviews": 85,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+      "description": "Modern slim fit jeans with a comfortable stretch for all-day wear.",
+      "id": 2
     },
     {
-      "id": 3,
       "name": "Leather Jacket",
-      "price": 199.99,
-      "description": "Premium quality leather jacket with a classic design.",
       "category": "Jackets",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "price": 290000,
       "stock": 29,
       "rating": 4.8,
-      "reviews": 45
+      "reviews": 45,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "description": "Premium quality leather jacket with a classic design.",
+      "id": 3
     },
     {
-      "id": 4,
       "name": "Running Shoes",
-      "price": 89.99,
-      "description": "Lightweight running shoes with excellent cushioning and support.",
       "category": "Shoes",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Den_f78pam.jpg",
+      "price": 178000,
       "stock": 50,
       "rating": 4.6,
-      "reviews": 95
+      "reviews": 95,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Den_f78pam.jpg",
+      "description": "Lightweight running shoes with excellent cushioning and support.",
+      "id": 4
     },
     {
-      "id": 5,
       "name": "Wool Sweater",
-      "price": 79.99,
-      "description": "Warm and cozy wool sweater perfect for cold weather.",
       "category": "Sweaters",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayTayDai-Tim_ghbhqe.jpg",
+      "price": 180000,
       "stock": 40,
       "rating": 4.3,
-      "reviews": 60
+      "reviews": 60,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayTayDai-Tim_ghbhqe.jpg",
+      "description": "Warm and cozy wool sweater perfect for cold weather.",
+      "id": 5
     },
     {
       "name": "Đầm QC phối linen tầng",
@@ -163,52 +163,19 @@
     },
     {
       "name": "Đầm QC phối linen tầng",
-      "price": 19999,
       "category": "Jeans",
+      "price": 350000,
       "stock": 30,
-      "description": "Đẹp vl",
       "rating": 1,
       "reviews": 22,
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "description": "Đẹp vl",
       "id": 7
     },
     {
       "name": "Đầm QC phối linen tầng",
-      "category": "Jeans",
-      "price": 45,
-      "stock": 10,
-      "rating": 5,
-      "reviews": 0,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "description": "so beautiful",
-      "id": 8
-    },
-    {
-      "name": "Đầm QC phối linen tầng",
-      "category": "Jeans",
-      "price": 45,
-      "stock": 10,
-      "rating": 5,
-      "reviews": 0,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "description": "test",
-      "id": 9
-    },
-    {
-      "name": "Đầm QC phối linen tầng",
-      "category": "Jeans",
-      "price": 45,
-      "stock": 10,
-      "rating": 5,
-      "reviews": 0,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "description": "test111111",
-      "id": 10
-    },
-    {
-      "name": "Đầm QC phối linen tầng",
       "category": "Dresses",
-      "price": 45,
+      "price": 153000,
       "stock": 10,
       "rating": 5,
       "reviews": 0,
@@ -219,35 +186,13 @@
     {
       "name": "Đầm QC phối linen tầng",
       "category": "Jeans",
-      "price": 45,
+      "price": 190000,
       "stock": 10,
       "rating": 5,
       "reviews": 0,
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
       "description": "test",
       "id": 12
-    },
-    {
-      "name": "Đầm QC phối linen tầng",
-      "category": "Jeans",
-      "price": 45,
-      "stock": 10,
-      "rating": 5,
-      "reviews": 0,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "description": "test",
-      "id": 13
-    },
-    {
-      "name": "Đầm QC phối linen tầng",
-      "category": "Jeans",
-      "price": 45,
-      "stock": 10,
-      "rating": 5,
-      "reviews": 0,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "description": "test",
-      "id": 14
     }
   ],
   "cart": [
@@ -483,6 +428,34 @@
           "status": "shipped",
           "timestamp": "2025-05-04T05:38:04.188Z",
           "note": "Status changed to shipped"
+        }
+      ]
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "userId": 8,
+          "id": 4
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-04T12:37:49.661Z",
+      "id": 9,
+      "status": "delivered",
+      "statusHistory": [
+        {
+          "status": "delivered",
+          "timestamp": "2025-05-04T12:40:01.063Z",
+          "note": "Status changed to delivered"
         }
       ]
     }

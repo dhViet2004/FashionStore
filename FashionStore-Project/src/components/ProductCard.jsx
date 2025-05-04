@@ -1,6 +1,15 @@
 import { FaStar, FaRegStar } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';  // Sử dụng useNavigate thay vì history.push
 
+const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();  // Hook để điều hướng đến trang chi tiết sản phẩm
 
@@ -45,7 +54,7 @@ const ProductCard = ({ product }) => {
       </div>
       <div className="p-4">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
-        <p className="text-blue-600 font-bold mb-2">${product.price.toFixed(2)}</p>
+        <p className="text-blue-600 font-bold mb-2">{formatCurrency(product.price)}</p>
         <p className="text-sm text-gray-600 mb-2">{product.description}</p>
         <div className="flex items-center mb-2">
           <div className="flex mr-2">{renderStars(product.rating)}</div>

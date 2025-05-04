@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tag, Button, Modal, Form, Select, Input, Space, message } from 'antd';
+import { Table, Tag, Button, Modal, Form, Select, Input, Space, message, Descriptions, Card, Timeline, Typography, Divider } from 'antd';
 import { 
   CheckCircleOutlined, 
   SyncOutlined, 
   CarOutlined, 
   ShoppingOutlined,
   SearchOutlined,
-  FilterOutlined
+  FilterOutlined,
+  UserOutlined,
+  PhoneOutlined,
+  EnvironmentOutlined,
+  ShoppingCartOutlined,
+  ClockCircleOutlined,
+  DollarOutlined,
+  BarcodeOutlined
 } from '@ant-design/icons';
 import { format } from 'date-fns';
 
@@ -120,6 +127,15 @@ const OrderManagement = () => {
     setIsModalVisible(true);
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
   const columns = [
     {
       title: 'Order ID',
@@ -150,7 +166,7 @@ const OrderManagement = () => {
       title: 'Total',
       dataIndex: 'total',
       key: 'total',
-      render: (total) => `$${total.toFixed(2)}`,
+      render: (total) => formatCurrency(total),
       sorter: (a, b) => a.total - b.total,
     },
     {
@@ -242,38 +258,93 @@ const OrderManagement = () => {
       />
 
       <Modal
-        title={`Order Details #${selectedOrder?.id}`}
+        title={
+          <div className="flex items-center space-x-2">
+            <ShoppingCartOutlined className="text-blue-500" />
+            <span>Order Details #{selectedOrder?.id}</span>
+          </div>
+        }
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
         width={800}
       >
         {selectedOrder && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-semibold">Order Information</h3>
-              <p>Date: {format(new Date(selectedOrder.createdAt), 'PPP')}</p>
-              <p>Status: 
-                <Tag color={getStatusColor(selectedOrder.status)} icon={getStatusIcon(selectedOrder.status)}>
-                  {selectedOrder.status.toUpperCase()}
-                </Tag>
-              </p>
-              {selectedOrder.trackingNumber && (
-                <p>Tracking Number: {selectedOrder.trackingNumber}</p>
-              )}
-            </div>
+          <div className="space-y-6">
+            <Card>
+              <Descriptions title="Order Information" bordered>
+                <Descriptions.Item label="Order ID" span={3}>
+                  <Space>
+                    <BarcodeOutlined />
+                    {selectedOrder.id}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Order Date" span={3}>
+                  <Space>
+                    <ClockCircleOutlined />
+                    {format(new Date(selectedOrder.createdAt), 'PPP')}
+                  </Space>
+                </Descriptions.Item>
+                <Descriptions.Item label="Status" span={3}>
+                  <Tag color={getStatusColor(selectedOrder.status)} icon={getStatusIcon(selectedOrder.status)}>
+                    {selectedOrder.status.toUpperCase()}
+                  </Tag>
+                </Descriptions.Item>
+                {selectedOrder.trackingNumber && (
+                  <Descriptions.Item label="Tracking Number" span={3}>
+                    <Space>
+                      <CarOutlined />
+                      {selectedOrder.trackingNumber}
+                    </Space>
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
 
-            <div>
-              <h3 className="font-semibold">Shipping Information</h3>
-              <p>Address: {selectedOrder.shippingInfo.address}</p>
-              <p>City: {selectedOrder.shippingInfo.city}</p>
-              <p>State: {selectedOrder.shippingInfo.state}</p>
-              <p>ZIP: {selectedOrder.shippingInfo.zipCode}</p>
-              <p>Phone: {selectedOrder.shippingInfo.phone}</p>
-            </div>
+            <Card title={
+              <div className="flex items-center space-x-2">
+                <UserOutlined className="text-blue-500" />
+                <span>Customer Information</span>
+              </div>
+            }>
+              <Descriptions bordered>
+                <Descriptions.Item label="Customer ID" span={3}>
+                  User #{selectedOrder.userId}
+                </Descriptions.Item>
+                {selectedOrder.shippingInfo && (
+                  <>
+                    <Descriptions.Item label="Address" span={3}>
+                      <Space>
+                        <EnvironmentOutlined />
+                        {selectedOrder.shippingInfo.address}
+                      </Space>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="City" span={3}>
+                      {selectedOrder.shippingInfo.city}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="State" span={3}>
+                      {selectedOrder.shippingInfo.state}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="ZIP Code" span={3}>
+                      {selectedOrder.shippingInfo.zipCode}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Phone" span={3}>
+                      <Space>
+                        <PhoneOutlined />
+                        {selectedOrder.shippingInfo.phone}
+                      </Space>
+                    </Descriptions.Item>
+                  </>
+                )}
+              </Descriptions>
+            </Card>
 
-            <div>
-              <h3 className="font-semibold">Order Items</h3>
+            <Card title={
+              <div className="flex items-center space-x-2">
+                <ShoppingCartOutlined className="text-blue-500" />
+                <span>Order Items</span>
+              </div>
+            }>
               <Table
                 dataSource={selectedOrder.items}
                 columns={[
@@ -281,12 +352,18 @@ const OrderManagement = () => {
                     title: 'Product',
                     dataIndex: 'name',
                     key: 'name',
+                    render: (text, record) => (
+                      <Space>
+                        <img src={record.imageUrl} alt={text} className="w-10 h-10 object-cover rounded" />
+                        <span>{text}</span>
+                      </Space>
+                    ),
                   },
                   {
                     title: 'Price',
                     dataIndex: 'price',
                     key: 'price',
-                    render: (price) => `$${price.toFixed(2)}`,
+                    render: (price) => formatCurrency(price),
                   },
                   {
                     title: 'Quantity',
@@ -296,46 +373,50 @@ const OrderManagement = () => {
                   {
                     title: 'Total',
                     key: 'total',
-                    render: (_, record) => `$${(record.price * record.quantity).toFixed(2)}`,
+                    render: (_, record) => formatCurrency(record.price * record.quantity),
                   },
                 ]}
                 pagination={false}
               />
-              <div className="text-right mt-4">
-                <p className="font-bold">Total: ${selectedOrder.total.toFixed(2)}</p>
+              <Divider />
+              <div className="text-right">
+                <Typography.Title level={4}>
+                  <Space>
+                    <span>Total Amount:</span>
+                    {formatCurrency(selectedOrder.total)}
+                  </Space>
+                </Typography.Title>
               </div>
-            </div>
+            </Card>
 
-            <div>
-              <h3 className="font-semibold">Status History</h3>
-              <Table
-                dataSource={selectedOrder.statusHistory}
-                columns={[
-                  {
-                    title: 'Status',
-                    dataIndex: 'status',
-                    key: 'status',
-                    render: (status) => (
-                      <Tag color={getStatusColor(status)} icon={getStatusIcon(status)}>
-                        {status.toUpperCase()}
-                      </Tag>
+            {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 && (
+              <Card title={
+                <div className="flex items-center space-x-2">
+                  <ClockCircleOutlined className="text-blue-500" />
+                  <span>Status History</span>
+                </div>
+              }>
+                <Timeline
+                  items={selectedOrder.statusHistory.map((history) => ({
+                    key: history.timestamp,
+                    color: getStatusColor(history.status),
+                    children: (
+                      <div className="space-y-1" key={history.timestamp}>
+                        <div className="flex items-center space-x-2">
+                          <Tag color={getStatusColor(history.status)} icon={getStatusIcon(history.status)}>
+                            {history.status.toUpperCase()}
+                          </Tag>
+                          <span className="text-gray-500">
+                            {format(new Date(history.timestamp), 'PPp')}
+                          </span>
+                        </div>
+                        <p className="text-gray-600 ml-8">{history.note}</p>
+                      </div>
                     ),
-                  },
-                  {
-                    title: 'Date',
-                    dataIndex: 'timestamp',
-                    key: 'timestamp',
-                    render: (timestamp) => format(new Date(timestamp), 'PPp'),
-                  },
-                  {
-                    title: 'Note',
-                    dataIndex: 'note',
-                    key: 'note',
-                  },
-                ]}
-                pagination={false}
-              />
-            </div>
+                  }))}
+                />
+              </Card>
+            )}
           </div>
         )}
       </Modal>

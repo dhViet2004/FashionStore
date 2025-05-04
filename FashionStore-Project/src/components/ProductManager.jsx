@@ -201,6 +201,15 @@ const ProductManager = () => {
     });
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  };
+
   const columns = [
     {
       title: 'Product',
@@ -224,7 +233,7 @@ const ProductManager = () => {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price) => <span className="font-medium">${price.toFixed(2)}</span>,
+      render: (price) => <span className="font-medium">{formatCurrency(price)}</span>,
     },
     {
       title: 'Stock',
@@ -373,10 +382,12 @@ const ProductManager = () => {
             >
               <InputNumber 
                 min={0} 
-                step={0.01} 
+                step={1000} 
                 style={{ width: '100%' }} 
                 placeholder="Enter price" 
-                prefix="$"
+                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                addonAfter="₫"
               />
             </Form.Item>
 
