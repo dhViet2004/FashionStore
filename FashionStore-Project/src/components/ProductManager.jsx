@@ -9,14 +9,14 @@ import {
   Input, 
   InputNumber, 
   Upload, 
-  message, 
   Popconfirm, 
   Tag, 
   Card, 
   Typography, 
   Tooltip, 
   Spin,
-  Select
+  Select,
+  App
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -41,7 +41,11 @@ const ProductManager = () => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form] = Form.useForm();
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [deleteForm] = Form.useForm();
   const navigate = useNavigate();
+  const { message: messageApi } = App.useApp();
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -79,10 +83,21 @@ const ProductManager = () => {
       }
       
       setProducts(products.filter(product => product.id !== id));
-      message.success('Product deleted successfully');
+      messageApi.success({
+        content: 'Product deleted successfully',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        duration: 3,
+      });
+      setDeleteModalVisible(false);
+      setProductToDelete(null);
+      deleteForm.resetFields();
     } catch {
       setError('Failed to delete product. Please try again later.');
-      message.error('Failed to delete product');
+      messageApi.error({
+        content: 'Failed to delete product',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+      });
     }
   };
 
@@ -139,10 +154,19 @@ const ProductManager = () => {
       setEditingProduct(null);
       form.resetFields();
       await fetchProducts();
-      message.success(editingProduct?.id ? 'Product updated successfully' : 'Product added successfully');
+      
+      messageApi.success({
+        content: editingProduct?.id ? 'Product updated successfully' : 'Product added successfully',
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        duration: 3,
+      });
     } catch {
       setError('Failed to save product. Please try again later.');
-      message.error('Failed to save product');
+      messageApi.error({
+        content: 'Failed to save product',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -151,6 +175,30 @@ const ProductManager = () => {
   const handleCancel = () => {
     setEditingProduct(null);
     form.resetFields();
+  };
+
+  const handleAddProduct = () => {
+    setEditingProduct({});
+    form.resetFields();
+  };
+
+  const showDeleteModal = (product) => {
+    setProductToDelete(product);
+    setDeleteModalVisible(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    deleteForm.validateFields().then(values => {
+      if (values.confirmName === productToDelete.name) {
+        handleDelete(productToDelete.id);
+      } else {
+        messageApi.error({
+          content: 'Product name does not match',
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+        });
+      }
+    });
   };
 
   const columns = [
@@ -212,20 +260,13 @@ const ProductManager = () => {
               className="border-blue-500 text-blue-500 hover:bg-blue-50"
             />
           </Tooltip>
-          <Popconfirm
-            title="Are you sure you want to delete this product?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Delete">
-              <Button 
-                danger 
-                icon={<DeleteOutlined />} 
-              />
-            </Tooltip>
-          </Popconfirm>
+          <Tooltip title="Delete">
+            <Button 
+              danger 
+              icon={<DeleteOutlined />}
+              onClick={() => showDeleteModal(record)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
@@ -247,10 +288,7 @@ const ProductManager = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingProduct({});
-              form.resetFields();
-            }}
+            onClick={handleAddProduct}
             className="bg-blue-500 hover:bg-blue-600 border-none"
           >
             Add Product
@@ -295,34 +333,43 @@ const ProductManager = () => {
             reviews: 0,
             stock: 10
           }}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              form.submit();
+            }
+          }}
         >
-          <div className="grid grid-cols-2 gap-3">
-            <Form.Item
-              name="name"
-              label="Product Name"
-              rules={[{ required: true, message: 'Please enter product name' }]}
-            >
-              <Input placeholder="Enter product name" />
-            </Form.Item>
+          <Form.Item
+            name="name"
+            label="Product Name"
+            rules={[{ required: true, message: 'Please enter product name' }]}
+            className="mb-2"
+          >
+            <Input placeholder="Enter product name" />
+          </Form.Item>
 
-            <Form.Item
-              name="category"
-              label="Category"
-              rules={[{ required: true, message: 'Please select category' }]}
-            >
-              <Select placeholder="Select category">
-                <Option value="T-Shirts">T-Shirts</Option>
-                <Option value="Jeans">Jeans</Option>
-                <Option value="Dresses">Dresses</Option>
-                <Option value="Shoes">Shoes</Option>
-                <Option value="Accessories">Accessories</Option>
-              </Select>
-            </Form.Item>
+          <Form.Item
+            name="category"
+            label="Category"
+            rules={[{ required: true, message: 'Please select category' }]}
+            className="mb-2"
+          >
+            <Select placeholder="Select category">
+              <Option value="T-Shirts">T-Shirts</Option>
+              <Option value="Jeans">Jeans</Option>
+              <Option value="Dresses">Dresses</Option>
+              <Option value="Shoes">Shoes</Option>
+              <Option value="Accessories">Accessories</Option>
+            </Select>
+          </Form.Item>
 
+          <div className="grid grid-cols-2 gap-x-4">
             <Form.Item
               name="price"
               label="Price"
               rules={[{ required: true, message: 'Please enter price' }]}
+              className="mb-2"
             >
               <InputNumber 
                 min={0} 
@@ -337,6 +384,7 @@ const ProductManager = () => {
               name="stock"
               label="Stock"
               rules={[{ required: true, message: 'Please enter stock quantity' }]}
+              className="mb-2"
             >
               <InputNumber 
                 min={0} 
@@ -349,6 +397,7 @@ const ProductManager = () => {
               name="rating"
               label="Rating"
               rules={[{ required: true, message: 'Please enter rating' }]}
+              className="mb-2"
             >
               <InputNumber 
                 min={0} 
@@ -363,6 +412,7 @@ const ProductManager = () => {
               name="reviews"
               label="Reviews Count"
               rules={[{ required: true, message: 'Please enter reviews count' }]}
+              className="mb-2"
             >
               <InputNumber 
                 min={0} 
@@ -370,26 +420,27 @@ const ProductManager = () => {
                 placeholder="Enter reviews count" 
               />
             </Form.Item>
-
-            <Form.Item
-              name="imageUrl"
-              label="Image URL"
-              rules={[{ required: true, message: 'Please enter image URL' }]}
-            >
-              <Input placeholder="Enter image URL" />
-            </Form.Item>
           </div>
+
+          <Form.Item
+            name="imageUrl"
+            label="Image URL"
+            rules={[{ required: true, message: 'Please enter image URL' }]}
+            className="mb-2"
+          >
+            <Input placeholder="Enter image URL" />
+          </Form.Item>
 
           <Form.Item
             name="description"
             label="Description"
             rules={[{ required: true, message: 'Please enter description' }]}
-            className="col-span-2"
+            className="mb-2"
           >
             <TextArea rows={3} placeholder="Enter product description" />
           </Form.Item>
 
-          <Form.Item className="flex justify-end space-x-3">
+          <Form.Item className="flex justify-end space-x-3 mb-0">
             <Button onClick={handleCancel}>
               Cancel
             </Button>
@@ -404,8 +455,72 @@ const ProductManager = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      <Modal
+        title="Delete Product"
+        open={deleteModalVisible}
+        onCancel={() => {
+          setDeleteModalVisible(false);
+          setProductToDelete(null);
+          deleteForm.resetFields();
+        }}
+        footer={null}
+        destroyOnClose
+      >
+        <div className="mb-4">
+          <p className="text-gray-600">To confirm deletion, please type the product name:</p>
+          <p className="font-medium text-red-500 mt-2">{productToDelete?.name}</p>
+        </div>
+        <Form
+          form={deleteForm}
+          onFinish={handleDeleteConfirm}
+        >
+          <Form.Item
+            name="confirmName"
+            rules={[
+              { required: true, message: 'Please enter the product name' },
+              {
+                validator: (_, value) => {
+                  if (value === productToDelete?.name) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('Product name does not match'));
+                }
+              }
+            ]}
+          >
+            <Input placeholder="Type product name to confirm" />
+          </Form.Item>
+          <div className="flex justify-end space-x-3">
+            <Button 
+              onClick={() => {
+                setDeleteModalVisible(false);
+                setProductToDelete(null);
+                deleteForm.resetFields();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              danger 
+              onClick={handleDeleteConfirm}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              Delete Product
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 };
 
-export default ProductManager;
+const ProductManagerWithApp = () => {
+  return (
+    <App>
+      <ProductManager />
+    </App>
+  );
+};
+
+export default ProductManagerWithApp;

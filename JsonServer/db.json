@@ -107,17 +107,6 @@
   ],
   "products": [
     {
-      "id": 1,
-      "name": "Classic White T-Shirt",
-      "price": 29.99,
-      "description": "A comfortable and versatile white t-shirt made from 100% organic cotton.",
-      "category": "T-Shirts",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-      "stock": 94,
-      "rating": 4.5,
-      "reviews": 120
-    },
-    {
       "id": 2,
       "name": "Slim Fit Jeans",
       "price": 59.99,
@@ -182,6 +171,83 @@
       "reviews": 22,
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
       "id": 7
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "so beautiful",
+      "id": 8
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test",
+      "id": 9
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test111111",
+      "id": 10
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Dresses",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test",
+      "id": 11
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test",
+      "id": 12
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test",
+      "id": 13
+    },
+    {
+      "name": "Đầm QC phối linen tầng",
+      "category": "Jeans",
+      "price": 45,
+      "stock": 10,
+      "rating": 5,
+      "reviews": 0,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "test",
+      "id": 14
     }
   ],
   "cart": [
@@ -371,6 +437,54 @@
       "voucher": null,
       "createdAt": "2025-05-03T08:08:11.623Z",
       "id": 6
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 199.99,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "userId": 8,
+          "id": 4
+        }
+      ],
+      "total": 30199.99,
+      "voucher": null,
+      "createdAt": "2025-05-03T16:14:58.781Z",
+      "id": 7
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 199.99,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "userId": 8,
+          "id": 4
+        }
+      ],
+      "total": 30199.99,
+      "voucher": null,
+      "createdAt": "2025-05-04T04:53:08.002Z",
+      "id": 8,
+      "status": "shipped",
+      "statusHistory": [
+        {
+          "status": "shipped",
+          "timestamp": "2025-05-04T05:38:04.188Z",
+          "note": "Status changed to shipped"
+        }
+      ]
     }
   ]
 }

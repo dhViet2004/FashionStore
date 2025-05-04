@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Row, Col, Statistic, Typography, Avatar, Badge, Button, Table, Tag, Space, Tooltip } from 'antd';
+import { Card, Row, Col, Statistic, Typography, Avatar, Badge, Button, Table, Tag, Space, Tooltip, Progress } from 'antd';
 import { 
   ShoppingOutlined, 
   UserOutlined, 
@@ -14,21 +14,53 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
+  ExclamationCircleOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
+  RiseOutlined,
+  FallOutlined
 } from '@ant-design/icons';
 import { FaShoppingBag, FaUsers, FaChartLine, FaCog, FaBox, FaTags, FaClipboardList } from 'react-icons/fa';
 import ProductManager from '../../components/ProductManager';
+import OrderManagement from '../../components/admin/OrderManagement';
 
 const { Title, Text } = Typography;
 
 const Admin = () => {
-  const [activeSection, setActiveSection] = useState(null);
+  const [activeSection, setActiveSection] = useState('overview');
 
   const handleSectionClick = (section) => {
     setActiveSection(section);
   };
 
   // Sample data for dashboard
+  const overviewData = {
+    turnover: {
+      current: 11280,
+      previous: 10080,
+      change: 12,
+      trend: 'up'
+    },
+    profit: {
+      current: 5640,
+      previous: 5040,
+      change: 11.9,
+      trend: 'up'
+    },
+    orders: {
+      current: 93,
+      previous: 86,
+      change: 8.1,
+      trend: 'up'
+    },
+    customers: {
+      current: 128,
+      previous: 111,
+      change: 15.3,
+      trend: 'up'
+    }
+  };
+
   const recentOrders = [
     { id: 1, customer: 'John Doe', amount: 129.99, status: 'completed', date: '2023-05-15' },
     { id: 2, customer: 'Jane Smith', amount: 89.50, status: 'pending', date: '2023-05-14' },
@@ -84,290 +116,246 @@ const Admin = () => {
       title: 'Date',
       dataIndex: 'date',
       key: 'date',
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: () => (
-        <Space size="middle">
-          <Button type="link" size="small">View</Button>
-          <Button type="link" size="small">Edit</Button>
-        </Space>
-      ),
-    },
+    }
   ];
+
+  const renderOverview = () => (
+    <div className="space-y-6">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <Text className="text-gray-500">Total Turnover</Text>
+              <div className="flex items-center mt-1">
+                <Title level={4} className="m-0 mr-2">${overviewData.turnover.current.toLocaleString()}</Title>
+                <Tag color={overviewData.turnover.trend === 'up' ? 'success' : 'error'} className="flex items-center">
+                  {overviewData.turnover.trend === 'up' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                  {overviewData.turnover.change}%
+                </Tag>
+              </div>
+            </div>
+            <div className="bg-blue-50 rounded-full p-2">
+              <DollarOutlined className="text-blue-500 text-lg" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <Text className="text-gray-500">Total Profit</Text>
+              <div className="flex items-center mt-1">
+                <Title level={4} className="m-0 mr-2">${overviewData.profit.current.toLocaleString()}</Title>
+                <Tag color={overviewData.profit.trend === 'up' ? 'success' : 'error'} className="flex items-center">
+                  {overviewData.profit.trend === 'up' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                  {overviewData.profit.change}%
+                </Tag>
+              </div>
+            </div>
+            <div className="bg-green-50 rounded-full p-2">
+              <RiseOutlined className="text-green-500 text-lg" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <Text className="text-gray-500">Total Orders</Text>
+              <div className="flex items-center mt-1">
+                <Title level={4} className="m-0 mr-2">{overviewData.orders.current}</Title>
+                <Tag color={overviewData.orders.trend === 'up' ? 'success' : 'error'} className="flex items-center">
+                  {overviewData.orders.trend === 'up' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                  {overviewData.orders.change}%
+                </Tag>
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-full p-2">
+              <ShoppingCartOutlined className="text-purple-500 text-lg" />
+            </div>
+          </div>
+        </Card>
+
+        <Card className="shadow-sm hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <Text className="text-gray-500">Total Customers</Text>
+              <div className="flex items-center mt-1">
+                <Title level={4} className="m-0 mr-2">{overviewData.customers.current}</Title>
+                <Tag color={overviewData.customers.trend === 'up' ? 'success' : 'error'} className="flex items-center">
+                  {overviewData.customers.trend === 'up' ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                  {overviewData.customers.change}%
+                </Tag>
+              </div>
+            </div>
+            <div className="bg-red-50 rounded-full p-2">
+              <TeamOutlined className="text-red-500 text-lg" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Performance Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card title="Profit Margin" className="shadow-sm">
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between mb-1">
+                <Text>Current Month</Text>
+                <Text strong>50%</Text>
+              </div>
+              <Progress percent={50} status="active" strokeColor="#52c41a" size="small" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1">
+                <Text>Last Month</Text>
+                <Text strong>45%</Text>
+              </div>
+              <Progress percent={45} strokeColor="#1890ff" size="small" />
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Order Status" className="shadow-sm">
+          <div className="space-y-3">
+            <div>
+              <div className="flex justify-between mb-1">
+                <Text>Completed</Text>
+                <Text strong>65%</Text>
+              </div>
+              <Progress percent={65} status="active" strokeColor="#52c41a" size="small" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1">
+                <Text>Processing</Text>
+                <Text strong>20%</Text>
+              </div>
+              <Progress percent={20} strokeColor="#1890ff" size="small" />
+            </div>
+            <div>
+              <div className="flex justify-between mb-1">
+                <Text>Pending</Text>
+                <Text strong>15%</Text>
+              </div>
+              <Progress percent={15} strokeColor="#faad14" size="small" />
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent Orders */}
+      <Card title="Recent Orders" className="shadow-sm">
+        <Table 
+          dataSource={recentOrders} 
+          columns={orderColumns} 
+          rowKey="id"
+          pagination={{ pageSize: 5 }}
+          size="small"
+        />
+      </Card>
+    </div>
+  );
 
   const renderActiveSection = () => {
     switch (activeSection) {
+      case 'overview':
+        return renderOverview();
       case 'products':
         return <ProductManager />;
       case 'orders':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Order Management</h2>
-            <Table 
-              dataSource={recentOrders} 
-              columns={orderColumns} 
-              rowKey="id"
-              pagination={{ pageSize: 10 }}
-            />
-          </div>
-        );
+        return <OrderManagement />;
       case 'categories':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Category Management</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-xl font-semibold mb-4">Category Management</h2>
             <p className="text-gray-600">Category management functionality coming soon.</p>
           </div>
         );
       case 'users':
         return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">User Management</h2>
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <h2 className="text-xl font-semibold mb-4">User Management</h2>
             <p className="text-gray-600">User management functionality coming soon.</p>
           </div>
         );
-      case 'analytics':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Analytics</h2>
-            <p className="text-gray-600">Analytics functionality coming soon.</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-2xl font-semibold mb-4">Settings</h2>
-            <p className="text-gray-600">Settings functionality coming soon.</p>
-          </div>
-        );
       default:
-        return (
-          <div className="space-y-6">
-            {/* Stats Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium opacity-80">Total Sales</p>
-                    <h3 className="text-2xl font-bold mt-1">$11,280</h3>
-                    <p className="text-xs mt-2 opacity-80">+12% from last month</p>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-full p-3">
-                    <DollarOutlined className="text-xl" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium opacity-80">Total Orders</p>
-                    <h3 className="text-2xl font-bold mt-1">93</h3>
-                    <p className="text-xs mt-2 opacity-80">+8% from last month</p>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-full p-3">
-                    <ShoppingCartOutlined className="text-xl" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium opacity-80">Total Products</p>
-                    <h3 className="text-2xl font-bold mt-1">42</h3>
-                    <p className="text-xs mt-2 opacity-80">+5% from last month</p>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-full p-3">
-                    <ShoppingOutlined className="text-xl" />
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-xl shadow-lg p-6 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium opacity-80">Total Customers</p>
-                    <h3 className="text-2xl font-bold mt-1">128</h3>
-                    <p className="text-xs mt-2 opacity-80">+15% from last month</p>
-                  </div>
-                  <div className="bg-white bg-opacity-20 rounded-full p-3">
-                    <TeamOutlined className="text-xl" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Recent Orders */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h2 className="text-xl font-semibold text-gray-800">Recent Orders</h2>
-              </div>
-              <div className="p-6">
-                <Table 
-                  dataSource={recentOrders} 
-                  columns={orderColumns} 
-                  rowKey="id"
-                  pagination={{ pageSize: 5 }}
-                  size="small"
-                />
-              </div>
-            </div>
-            
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-blue-100 rounded-full p-3">
-                    <FaShoppingBag className="text-blue-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">Add New Product</h3>
-                    <p className="text-sm text-gray-500">Create a new product listing</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-purple-100 rounded-full p-3">
-                    <FaClipboardList className="text-purple-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">View Reports</h3>
-                    <p className="text-sm text-gray-500">Access sales and analytics</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-green-100 rounded-full p-3">
-                    <FaCog className="text-green-500 text-xl" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-800">Settings</h3>
-                    <p className="text-sm text-gray-500">Configure store settings</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
+        return renderOverview();
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        {/* Product Management Card */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'products' ? 'ring-2 ring-blue-500' : ''}`}
+          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'overview' ? 'ring-1 ring-blue-500' : ''}`}
+          onClick={() => handleSectionClick('overview')}
+        >
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-50 rounded-full p-2">
+              <DashboardOutlined className="text-blue-500 text-lg" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-gray-800">Overview</h2>
+              <p className="text-sm text-gray-500">Dashboard</p>
+            </div>
+          </div>
+        </div>
+
+        <div 
+          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'products' ? 'ring-1 ring-blue-500' : ''}`}
           onClick={() => handleSectionClick('products')}
         >
-          <div className="flex items-center space-x-4">
-            <div className="bg-blue-100 rounded-full p-3">
-              <FaBox className="text-blue-500 text-xl" />
+          <div className="flex items-center space-x-3">
+            <div className="bg-blue-50 rounded-full p-2">
+              <FaBox className="text-blue-500 text-lg" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Product Management</h2>
-              <p className="text-gray-600 mt-1">Manage your products, add new items, and update existing ones</p>
+              <h2 className="text-base font-semibold text-gray-800">Products</h2>
+              <p className="text-sm text-gray-500">Manage products</p>
             </div>
           </div>
         </div>
 
-        {/* Order Management Card */}
         <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'orders' ? 'ring-2 ring-blue-500' : ''}`}
+          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'orders' ? 'ring-1 ring-blue-500' : ''}`}
           onClick={() => handleSectionClick('orders')}
         >
-          <div className="flex items-center space-x-4">
-            <div className="bg-purple-100 rounded-full p-3">
-              <FaClipboardList className="text-purple-500 text-xl" />
+          <div className="flex items-center space-x-3">
+            <div className="bg-purple-50 rounded-full p-2">
+              <FaClipboardList className="text-purple-500 text-lg" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Order Management</h2>
-              <p className="text-gray-600 mt-1">View and manage customer orders</p>
+              <h2 className="text-base font-semibold text-gray-800">Orders</h2>
+              <p className="text-sm text-gray-500">Manage orders</p>
             </div>
           </div>
         </div>
 
-        {/* Category Management Card */}
         <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'categories' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('categories')}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="bg-green-100 rounded-full p-3">
-              <FaTags className="text-green-500 text-xl" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Category Management</h2>
-              <p className="text-gray-600 mt-1">Organize your product categories</p>
-            </div>
-          </div>
-        </div>
-
-        {/* User Management Card */}
-        <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'users' ? 'ring-2 ring-blue-500' : ''}`}
+          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'users' ? 'ring-1 ring-blue-500' : ''}`}
           onClick={() => handleSectionClick('users')}
         >
-          <div className="flex items-center space-x-4">
-            <div className="bg-red-100 rounded-full p-3">
-              <FaUsers className="text-red-500 text-xl" />
+          <div className="flex items-center space-x-3">
+            <div className="bg-red-50 rounded-full p-2">
+              <FaUsers className="text-red-500 text-lg" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
-              <p className="text-gray-600 mt-1">Manage user accounts and permissions</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Analytics Card */}
-        <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'analytics' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('analytics')}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="bg-yellow-100 rounded-full p-3">
-              <FaChartLine className="text-yellow-500 text-xl" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Analytics</h2>
-              <p className="text-gray-600 mt-1">View sales and performance metrics</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Settings Card */}
-        <div 
-          className={`bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer ${activeSection === 'settings' ? 'ring-2 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('settings')}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="bg-gray-100 rounded-full p-3">
-              <FaCog className="text-gray-500 text-xl" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-800">Settings</h2>
-              <p className="text-gray-600 mt-1">Configure store settings and preferences</p>
+              <h2 className="text-base font-semibold text-gray-800">Users</h2>
+              <p className="text-sm text-gray-500">Manage users</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Active Section Content */}
-      {activeSection && (
-        <div className="mt-8">
-          {renderActiveSection()}
-        </div>
-      )}
+      <div className="mt-6">
+        {renderActiveSection()}
+      </div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaUser, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa';
+import { Dropdown } from 'antd';
 import LoginModal from './LoginModal';
 import { useCart } from '../context/CartContext';
 
@@ -32,15 +33,6 @@ const Navigation = () => {
     return user.imageUrl || '';
   };
 
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
-    } else {
-      navigate(`/products`);
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/');
@@ -60,6 +52,27 @@ const Navigation = () => {
       navigate(`/products`);
     }
   };
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      label: (
+        <Link to="/profile" className="flex items-center">
+          <FaUser className="mr-2" />
+          Profile
+        </Link>
+      ),
+    },
+    {
+      key: 'logout',
+      label: (
+        <button onClick={handleLogout} className="flex items-center w-full">
+          <FaSignOutAlt className="mr-2" />
+          Logout
+        </button>
+      ),
+    },
+  ];
 
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
@@ -106,22 +119,6 @@ const Navigation = () => {
             {user ? (
               <>
                 <Link
-                  to="/profile"
-                  className="text-gray-600 hover:text-blue-500 flex items-center"
-                  title="Profile"
-                >
-                  {getUserAvatar() ? (
-                    <img 
-                      src={getUserAvatar()} 
-                      alt="Profile" 
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full mr-1 sm:mr-2 object-cover"
-                    />
-                  ) : (
-                    <FaUser className="mr-1" />
-                  )}
-                  <span className="hidden sm:inline">{getUserDisplayName()}</span>
-                </Link>
-                <Link
                   to="/cart"
                   className="text-gray-600 hover:text-blue-500 flex items-center relative"
                   title="Cart"
@@ -134,14 +131,24 @@ const Navigation = () => {
                     </span>
                   )}
                 </Link>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-600 hover:text-blue-500 flex items-center"
-                  title="Logout"
+                <Dropdown
+                  menu={{ items: userMenuItems }}
+                  trigger={['click']}
+                  placement="bottomRight"
                 >
-                  <FaSignOutAlt className="mr-1" />
-                  <span className="hidden sm:inline">Logout</span>
-                </button>
+                  <div className="flex items-center cursor-pointer hover:text-blue-500">
+                    {getUserAvatar() ? (
+                      <img 
+                        src={getUserAvatar()} 
+                        alt="Profile" 
+                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full mr-1 sm:mr-2 object-cover"
+                      />
+                    ) : (
+                      <FaUser className="mr-1" />
+                    )}
+                    <span className="hidden sm:inline">{getUserDisplayName()}</span>
+                  </div>
+                </Dropdown>
               </>
             ) : (
               <button
