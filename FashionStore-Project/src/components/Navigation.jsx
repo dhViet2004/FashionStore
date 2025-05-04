@@ -118,19 +118,21 @@ const Navigation = () => {
           <div className="flex items-center space-x-2 sm:space-x-4">
             {user ? (
               <>
-                <Link
-                  to="/cart"
-                  className="text-gray-600 hover:text-blue-500 flex items-center relative"
-                  title="Cart"
-                >
-                  <FaShoppingCart className="mr-1" />
-                  <span className="hidden sm:inline">Cart</span>
-                  {cartItems.length > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {cartItems.length}
-                    </span>
-                  )}
-                </Link>
+                {user.role !== 'admin' && (
+                  <Link
+                    to="/cart"
+                    className="text-gray-600 hover:text-blue-500 flex items-center relative"
+                    title="Cart"
+                  >
+                    <FaShoppingCart className="mr-1" />
+                    <span className="hidden sm:inline">Cart</span>
+                    {cartItems.length > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartItems.length}
+                      </span>
+                    )}
+                  </Link>
+                )}
                 <Dropdown
                   menu={{ items: userMenuItems }}
                   trigger={['click']}
