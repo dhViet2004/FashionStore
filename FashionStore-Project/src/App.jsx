@@ -11,6 +11,8 @@ import Profile from './components/Profile';
 import Cart from './components/Cart';
 import LoginModal from './components/LoginModal';
 import Checkout from './components/Checkout';
+import ZaloChat from './components/ZaloChat';
+import AIChatBox from './components/AIChatBox';
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
           </Routes>
         </main>
         <Footer />
+        <AIChatBox />
+        <ZaloChat />
       </div>
     </Router>
   );
