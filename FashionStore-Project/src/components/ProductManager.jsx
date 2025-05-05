@@ -16,7 +16,9 @@ import {
   Tooltip, 
   Spin,
   Select,
-  App
+  App,
+  Row,
+  Col
 } from 'antd';
 import { 
   PlusOutlined, 
@@ -28,7 +30,7 @@ import {
   CloseCircleOutlined,
   EditFilled
 } from '@ant-design/icons';
-import { FaSpinner } from 'react-icons/fa';
+import { FaSpinner, FaTrash } from 'react-icons/fa';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -111,7 +113,8 @@ const ProductManager = () => {
       description: product.description,
       rating: product.rating,
       reviews: product.reviews,
-      imageUrl: product.imageUrl
+      imageUrl: product.imageUrl,
+      sizes: product.sizes || []
     });
   };
 
@@ -120,12 +123,17 @@ const ProductManager = () => {
     setError('');
 
     try {
+      const totalStock = calculateTotalStock(values.sizes);
       const productPayload = {
         ...values,
         price: parseFloat(values.price),
-        stock: parseInt(values.stock),
-        rating: parseFloat(values.rating),
-        reviews: parseInt(values.reviews),
+        stock: totalStock,
+        rating: 0,
+        reviews: 0,
+        sizes: values.sizes.map(size => ({
+          size: size.size,
+          stock: parseInt(size.stock)
+        }))
       };
 
       let response;
@@ -210,6 +218,17 @@ const ProductManager = () => {
     }).format(amount);
   };
 
+  const calculateTotalStock = (sizes) => {
+    if (!sizes || !Array.isArray(sizes)) return 0;
+    return sizes.reduce((total, size) => total + (parseInt(size.stock) || 0), 0);
+  };
+
+  const handleSizeChange = () => {
+    const sizes = form.getFieldValue('sizes');
+    const totalStock = calculateTotalStock(sizes);
+    form.setFieldValue('stock', totalStock);
+  };
+
   const columns = [
     {
       title: 'Product',
@@ -236,13 +255,17 @@ const ProductManager = () => {
       render: (price) => <span className="font-medium">{formatCurrency(price)}</span>,
     },
     {
-      title: 'Stock',
-      dataIndex: 'stock',
-      key: 'stock',
-      render: (stock) => (
-        <Tag color={stock > 10 ? 'green' : stock > 0 ? 'orange' : 'red'}>
-          {stock > 0 ? `${stock} in stock` : 'Out of stock'}
-        </Tag>
+      title: 'Sizes & Stock',
+      dataIndex: 'sizes',
+      key: 'sizes',
+      render: (sizes) => (
+        <div className="flex flex-wrap gap-1">
+          {sizes?.map((size, index) => (
+            <Tag key={index} color={size.stock > 10 ? 'green' : size.stock > 0 ? 'orange' : 'red'}>
+              {size.size}: {size.stock}
+            </Tag>
+          ))}
+        </div>
       ),
     },
     {
@@ -330,7 +353,7 @@ const ProductManager = () => {
         open={!!editingProduct}
         onCancel={handleCancel}
         footer={null}
-        width={700}
+        width={800}
         destroyOnClose
       >
         <Form
@@ -338,9 +361,7 @@ const ProductManager = () => {
           layout="vertical"
           onFinish={handleSubmit}
           initialValues={{
-            rating: 5,
-            reviews: 0,
-            stock: 10
+            sizes: [{ size: 'S', stock: 0 }]
           }}
           onKeyPress={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -358,22 +379,22 @@ const ProductManager = () => {
             <Input placeholder="Enter product name" />
           </Form.Item>
 
-          <Form.Item
-            name="category"
-            label="Category"
-            rules={[{ required: true, message: 'Please select category' }]}
-            className="mb-2"
-          >
-            <Select placeholder="Select category">
-              <Option value="T-Shirts">T-Shirts</Option>
-              <Option value="Jeans">Jeans</Option>
-              <Option value="Dresses">Dresses</Option>
-              <Option value="Shoes">Shoes</Option>
-              <Option value="Accessories">Accessories</Option>
-            </Select>
-          </Form.Item>
-
           <div className="grid grid-cols-2 gap-x-4">
+            <Form.Item
+              name="category"
+              label="Category"
+              rules={[{ required: true, message: 'Please select category' }]}
+              className="mb-2"
+            >
+              <Select placeholder="Select category">
+                <Option value="T-Shirts">T-Shirts</Option>
+                <Option value="Jeans">Jeans</Option>
+                <Option value="Dresses">Dresses</Option>
+                <Option value="Shoes">Shoes</Option>
+                <Option value="Accessories">Accessories</Option>
+              </Select>
+            </Form.Item>
+
             <Form.Item
               name="price"
               label="Price"
@@ -388,47 +409,6 @@ const ProductManager = () => {
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={value => value.replace(/\$\s?|(,*)/g, '')}
                 addonAfter="₫"
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="stock"
-              label="Stock"
-              rules={[{ required: true, message: 'Please enter stock quantity' }]}
-              className="mb-2"
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                placeholder="Enter stock quantity" 
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="rating"
-              label="Rating"
-              rules={[{ required: true, message: 'Please enter rating' }]}
-              className="mb-2"
-            >
-              <InputNumber 
-                min={0} 
-                max={5} 
-                step={0.1} 
-                style={{ width: '100%' }} 
-                placeholder="Enter rating (0-5)" 
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="reviews"
-              label="Reviews Count"
-              rules={[{ required: true, message: 'Please enter reviews count' }]}
-              className="mb-2"
-            >
-              <InputNumber 
-                min={0} 
-                style={{ width: '100%' }} 
-                placeholder="Enter reviews count" 
               />
             </Form.Item>
           </div>
@@ -450,6 +430,68 @@ const ProductManager = () => {
           >
             <TextArea rows={3} placeholder="Enter product description" />
           </Form.Item>
+
+          <Form.List name="sizes">
+            {(fields, { add, remove }) => (
+              <>
+                <div className="flex justify-between items-center mb-2">
+                  <Text strong>Sizes & Stock</Text>
+                  <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                    Add Size
+                  </Button>
+                </div>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Row key={key} gutter={8} className="mb-2">
+                    <Col span={8}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'size']}
+                        rules={[{ required: true, message: 'Missing size' }]}
+                      >
+                        <Select placeholder="Select size">
+                          <Option value="S">S</Option>
+                          <Option value="M">M</Option>
+                          <Option value="L">L</Option>
+                          <Option value="XL">XL</Option>
+                          <Option value="XXL">XXL</Option>
+                          <Option value="XXXL">XXXL</Option>
+                          <Option value="XXXXL">XXXXL</Option>
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={12}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, 'stock']}
+                        rules={[{ required: true, message: 'Missing stock' }]}
+                      >
+                        <InputNumber
+                          min={0}
+                          style={{ width: '100%' }}
+                          placeholder="Stock quantity"
+                          onChange={handleSizeChange}
+                        />
+                      </Form.Item>
+                    </Col>
+                    <Col span={4}>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<FaTrash className="text-red-500" />}
+                        onClick={() => {
+                          remove(name);
+                          handleSizeChange();
+                        }}
+                        className="mt-1 flex items-center gap-1"
+                      >
+                        Delete Size
+                      </Button>
+                    </Col>
+                  </Row>
+                ))}
+              </>
+            )}
+          </Form.List>
 
           <Form.Item className="flex justify-end space-x-3 mb-0">
             <Button onClick={handleCancel}>

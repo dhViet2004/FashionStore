@@ -3,16 +3,14 @@ import { Card, Avatar, Button, Modal, Form, Input, DatePicker, message, Tabs, Ta
 import { UserOutlined, EditOutlined, ShoppingCartOutlined, HistoryOutlined, TruckOutlined, MenuOutlined, CameraOutlined, UploadOutlined, CheckCircleOutlined, SyncOutlined, CarOutlined, ShoppingOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, InfoCircleOutlined, DollarOutlined, CreditCardOutlined, EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaIdCard } from 'react-icons/fa';
 import { format as formatDate, isValid, parseISO } from 'date-fns';
+import dayjs from 'dayjs';
 
 const Profile = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isAvatarModalVisible, setIsAvatarModalVisible] = useState(false);
-  const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState('profile');
-  const [cartItems, setCartItems] = useState([]);
   const [orderHistory, setOrderHistory] = useState([]);
   const [activeOrders, setActiveOrders] = useState([]);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -21,6 +19,8 @@ const Profile = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
+  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
+  const [editForm] = Form.useForm();
 
   useEffect(() => {
     const handleResize = () => {
@@ -53,12 +53,6 @@ const Profile = () => {
 
   useEffect(() => {
     if (user && user.role === 'user') {
-      // Fetch cart items
-      fetch(`http://localhost:3001/cart?userId=${user.id}`)
-        .then(response => response.json())
-        .then(data => setCartItems(data))
-        .catch(error => console.error('Error fetching cart items:', error));
-
       // Fetch orders
       fetch(`http://localhost:3001/orders?userId=${user.id}`)
         .then(response => response.json())
@@ -111,47 +105,48 @@ const Profile = () => {
     }
   };
 
-  const handleEdit = () => {
-    form.setFieldsValue({
+  const handleEditProfile = () => {
+    editForm.setFieldsValue({
       name: user.name || user.full_name,
-      birthday: user.birthday ? new Date(user.birthday) : null,
-      phone: user.phoneNumber,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
       address: user.address,
-      email: user.email
+      birthday: user.birthday ? dayjs(user.birthday) : null
     });
-    setIsModalVisible(true);
+    setIsEditModalVisible(true);
   };
 
-  const handleSave = async () => {
+  const handleEditProfileSubmit = async () => {
     try {
-      const values = await form.validateFields();
+      const values = await editForm.validateFields();
       const updatedUser = {
         ...user,
         name: values.name,
         full_name: values.name,
-        birthday: values.birthday ? formatDate(values.birthday, 'yyyy-MM-dd') : null,
-        phoneNumber: values.phone,
+        email: values.email,
+        phoneNumber: values.phoneNumber,
         address: values.address,
-        email: values.email
+        birthday: values.birthday ? values.birthday.format('YYYY-MM-DD') : null
       };
 
-      // Update user in the database
       const response = await fetch(`http://localhost:3001/users/${user.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(updatedUser),
       });
 
       if (response.ok) {
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setUser(updatedUser);
-        setIsModalVisible(false);
+        setIsEditModalVisible(false);
         message.success('Profile updated successfully');
       } else {
-        message.error('Failed to update profile');
+        throw new Error('Failed to update profile');
       }
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      console.error('Error updating profile:', error);
       message.error('Failed to update profile');
     }
   };
@@ -233,72 +228,10 @@ const Profile = () => {
     return steps;
   };
 
-  const handleRemoveFromCart = async (cartItemId) => {
-    try {
-      const response = await fetch(`http://localhost:3001/cart/${cartItemId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        // Update local state after successful deletion
-        setCartItems(prevItems => prevItems.filter(item => item.id !== cartItemId));
-        message.success('Item removed from cart');
-      } else {
-        message.error('Failed to remove item from cart');
-      }
-    } catch (error) {
-      console.error('Error removing item from cart:', error);
-      message.error('Error removing item from cart');
-    }
-  };
-
   const handleViewOrder = (order) => {
     setSelectedOrder(order);
     setIsOrderModalVisible(true);
   };
-
-  const cartColumns = [
-    {
-      title: 'Product',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <div className="flex items-center">
-          <img src={record.imageUrl} alt={text} className="w-12 h-12 object-cover rounded mr-3" />
-          <span>{text}</span>
-        </div>
-      ),
-    },
-    {
-      title: 'Price',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price) => `${price.toLocaleString('vi-VN')}₫`,
-    },
-    {
-      title: 'Quantity',
-      dataIndex: 'quantity',
-      key: 'quantity',
-    },
-    {
-      title: 'Total',
-      key: 'total',
-      render: (_, record) => `${(record.price * record.quantity).toLocaleString('vi-VN')}₫`,
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Button 
-          type="link" 
-          danger 
-          onClick={() => handleRemoveFromCart(record.id)}
-        >
-          Remove
-        </Button>
-      ),
-    },
-  ];
 
   const orderColumns = [
     {
@@ -409,37 +342,6 @@ const Profile = () => {
   ];
 
   // Mobile-optimized columns
-  const mobileCartColumns = [
-    {
-      title: 'Product',
-      dataIndex: 'name',
-      key: 'name',
-      render: (text, record) => (
-        <div className="flex items-center">
-          <img src={record.imageUrl} alt={text} className="w-10 h-10 object-cover rounded mr-2" />
-          <div>
-            <div className="font-medium">{text}</div>
-            <div className="text-xs text-gray-500">Qty: {record.quantity} × {record.price.toLocaleString('vi-VN')}₫</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Action',
-      key: 'action',
-      render: (_, record) => (
-        <Button 
-          type="link" 
-          danger 
-          size="small"
-          onClick={() => handleRemoveFromCart(record.id)}
-        >
-          Remove
-        </Button>
-      ),
-    },
-  ];
-
   const mobileOrderColumns = [
     {
       title: 'Order',
@@ -648,7 +550,7 @@ const Profile = () => {
               <Button
                 type="primary"
                 icon={<EditOutlined />}
-                onClick={handleEdit}
+                onClick={handleEditProfile}
                 className="bg-navy-600 hover:bg-navy-700 w-full sm:w-auto"
                 >
                 Edit Profile
@@ -730,74 +632,6 @@ const Profile = () => {
 
   // Add shopping cart tab for users
   if (user && user.role === 'user') {
-    items.push({
-      key: 'cart',
-      label: (
-        <span>
-          <ShoppingCartOutlined />
-          <span className="hidden sm:inline ml-1">Cart</span>
-          <Badge count={cartItems.length} style={{ marginLeft: '8px' }} />
-        </span>
-      ),
-      children: (
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
-          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4 sm:mb-6">Shopping Cart</h2>
-          {cartItems.length > 0 ? (
-            <>
-              <div className="overflow-x-auto">
-                <Table 
-                  columns={isMobile ? mobileCartColumns : cartColumns} 
-                  dataSource={cartItems} 
-                  rowKey="id"
-                  pagination={false}
-                  className="border border-gray-200"
-                  size={isMobile ? "small" : "default"}
-                />
-              </div>
-              <div className="mt-4 sm:mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-lg font-medium text-gray-700">Total Amount:</span>
-                  <span className="text-xl font-bold text-navy-600">
-                    {cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toLocaleString('vi-VN')}₫
-                  </span>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                  <Button 
-                    type="default" 
-                    size={isMobile ? "middle" : "large"}
-                    className="w-full sm:w-auto"
-                    onClick={() => window.location.href = '/products'}
-                  >
-                    Continue Shopping
-                  </Button>
-                  <Button 
-                    type="primary" 
-                    size={isMobile ? "middle" : "large"} 
-                    className="bg-navy-600 hover:bg-navy-700 w-full sm:w-auto"
-                    onClick={() => window.location.href = '/checkout'}
-                  >
-                    Proceed to Checkout
-                  </Button>
-                </div>
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-6 sm:py-8">
-              <ShoppingCartOutlined className="text-4xl sm:text-5xl text-gray-300 mb-3 sm:mb-4" />
-              <p className="text-lg sm:text-xl text-gray-500">Your cart is empty</p>
-              <Button 
-                type="primary" 
-                className="mt-3 sm:mt-4 bg-navy-600 hover:bg-navy-700"
-                onClick={() => window.location.href = '/products'}
-              >
-                Start Shopping
-              </Button>
-            </div>
-          )}
-        </div>
-      ),
-    });
-
     // Add order history tab
     items.push({
       key: 'history',
@@ -851,8 +685,8 @@ const Profile = () => {
             <div className="text-center py-6 sm:py-8">
               <TruckOutlined className="text-4xl sm:text-5xl text-gray-300 mb-3 sm:mb-4" />
               <p className="text-lg sm:text-xl text-gray-500">No active orders</p>
-        </div>
-      )}
+            </div>
+          )}
         </div>
       ),
     });
@@ -890,51 +724,74 @@ const Profile = () => {
 
       <div className="mb-24">
         <Modal
-          title="Edit Profile"
-          open={isModalVisible}
-          onOk={handleSave}
-          onCancel={() => setIsModalVisible(false)}
-          okText="Save"
+          title="Edit Profile Information"
+          open={isEditModalVisible}
+          onOk={() => handleEditProfileSubmit()}
+          onCancel={() => setIsEditModalVisible(false)}
+          okText="Save Changes"
           cancelText="Cancel"
           width={isMobile ? "95%" : 600}
         >
           <Form
-            form={form}
+            form={editForm}
             layout="vertical"
+            className="mt-4"
           >
             <Form.Item
               name="name"
-              label="Name"
-              rules={[{ required: true, message: 'Please input your name!' }]}
+              label="Full Name"
+              rules={[
+                { required: true, message: 'Please enter your full name' },
+                { min: 2, message: 'Name must be at least 2 characters' }
+              ]}
             >
-              <Input prefix={<UserOutlined />} />
+              <Input prefix={<UserOutlined />} placeholder="Enter your full name" />
             </Form.Item>
+
             <Form.Item
               name="email"
               label="Email"
               rules={[
-                { type: 'email', message: 'Please enter a valid email!' }
+                { required: true, message: 'Please enter your email' },
+                { type: 'email', message: 'Please enter a valid email' }
               ]}
             >
-              <Input prefix={<FaEnvelope className="text-gray-400" />} />
+              <Input prefix={<FaEnvelope className="text-gray-400" />} placeholder="Enter your email" />
             </Form.Item>
+
             <Form.Item
-              name="birthday"
-              label="Birthday"
-            >
-              <DatePicker className="w-full" />
-            </Form.Item>
-            <Form.Item
-              name="phone"
+              name="phoneNumber"
               label="Phone Number"
+              rules={[
+                { required: true, message: 'Please enter your phone number' },
+                { pattern: /^[0-9]{10,11}$/, message: 'Please enter a valid phone number' }
+              ]}
             >
-              <Input prefix={<FaPhone className="text-gray-400" />} />
+              <Input prefix={<FaPhone className="text-gray-400" />} placeholder="Enter your phone number" />
             </Form.Item>
+
             <Form.Item
               name="address"
               label="Address"
+              rules={[{ required: true, message: 'Please enter your address' }]}
             >
-              <Input.TextArea rows={3} prefix={<FaMapMarkerAlt className="text-gray-400" />} />
+              <Input.TextArea 
+                prefix={<FaMapMarkerAlt className="text-gray-400" />} 
+                placeholder="Enter your address"
+                rows={3}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="birthday"
+              label="Birthday"
+              rules={[{ required: true, message: 'Please select your birthday' }]}
+            >
+              <DatePicker 
+                className="w-full"
+                format="DD/MM/YYYY"
+                placeholder="Select your birthday"
+              />
             </Form.Item>
           </Form>
         </Modal>
