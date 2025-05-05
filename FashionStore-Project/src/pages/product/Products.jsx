@@ -7,6 +7,7 @@ const Products = () => {
   const [products, setProducts] = useState([]); // Danh sách sản phẩm gốc
   const [filteredProducts, setFilteredProducts] = useState([]); // Danh sách sản phẩm đã lọc
   const [orders, setOrders] = useState([]); // Danh sách đơn hàng
+  const [cart, setCart] = useState([]); // Danh sách sản phẩm trong giỏ hàng
   const [currentPage, setCurrentPage] = useState(1); // Trang hiện tại
   const itemsPerPage = 20; // Số sản phẩm trên mỗi trang
   const location = useLocation();
@@ -111,6 +112,23 @@ const Products = () => {
     );
   };
 
+  // Hàm thêm sản phẩm vào giỏ hàng
+  const handleAddToCart = (product) => {
+    setCart((prevCart) => {
+      const existingProduct = prevCart.find((item) => item.id === product.id);
+      if (existingProduct) {
+        return prevCart.map((item) =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prevCart, { ...product, quantity: 1 }];
+      }
+    });
+    alert(`${product.name} đã được thêm vào giỏ hàng!`);
+  };
+
   // Tính toán phân trang
   const indexOfLastProduct = currentPage * itemsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - itemsPerPage;
@@ -139,6 +157,7 @@ const Products = () => {
             data={currentProducts}
             itemsPerPage={itemsPerPage}
             hasPurchasedProduct={hasPurchasedProduct} // Truyền hàm kiểm tra quyền
+            onAddToCart={handleAddToCart} // Truyền hàm thêm vào giỏ hàng
           />
 
           {/* Phân trang */}

@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaRegStar, FaUserCircle } from 'react-icons/fa'; // Import icon mặc định
+import { FaStar, FaRegStar, FaUserCircle, FaArrowLeft   } from 'react-icons/fa'; // Import icon mặc định
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 import { useNotify } from '../context/notifyContext';
@@ -217,15 +217,15 @@ const DetailProduct = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-4 ">
       {/* Nút trở về */}
       <span 
         onClick={() => navigate(-1)} 
-        className="absolute left-27 top-20 text-2xl mb-4 text-gray-600 cursor-pointer pl-3 pr-4 rounded hover:bg-gray-200 select-none"
+        className="absolute left-26 top-24 text-2xl mb-4 text-gray-600 cursor-pointer pl-3 pr-4 pt-1 pb-1 rounded hover:bg-gray-200 select-none"
       >
-        &lt; 
+        <FaArrowLeft  />
       </span>
-      <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg shadow-lg mb-8">
+      <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg shadow-lg mb-8 pt-12">
         
         <div className="md:w-1/4 mb-6 md:mb-0">
           <img
