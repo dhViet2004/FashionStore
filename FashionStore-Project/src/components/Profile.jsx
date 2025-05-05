@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Card, Avatar, Button, Modal, Form, Input, DatePicker, message, Tabs, Table, Tag, Badge, Upload } from 'antd';
-import { UserOutlined, EditOutlined, ShoppingCartOutlined, HistoryOutlined, TruckOutlined, MenuOutlined, CameraOutlined, UploadOutlined } from '@ant-design/icons';
+import { Card, Avatar, Button, Modal, Form, Input, DatePicker, message, Tabs, Table, Tag, Badge, Upload, Steps, Descriptions, Space, Divider, Typography } from 'antd';
+import { UserOutlined, EditOutlined, ShoppingCartOutlined, HistoryOutlined, TruckOutlined, MenuOutlined, CameraOutlined, UploadOutlined, CheckCircleOutlined, SyncOutlined, CarOutlined, ShoppingOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, InfoCircleOutlined, DollarOutlined, CreditCardOutlined, EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaIdCard } from 'react-icons/fa';
 import { format as formatDate, isValid, parseISO } from 'date-fns';
 
@@ -19,6 +19,8 @@ const Profile = () => {
   const [avatarUrl, setAvatarUrl] = useState('');
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -49,27 +51,52 @@ const Profile = () => {
     loadUser();
   }, []);
 
-  // Mock data for cart, order history, and active orders
   useEffect(() => {
     if (user && user.role === 'user') {
-      // Mock cart items
-      setCartItems([
-        { id: 1, name: 'Classic White T-Shirt', price: 29.99, quantity: 2, image: 'https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg' },
-        { id: 2, name: 'Slim Fit Jeans', price: 59.99, quantity: 1, image: 'https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg' },
-      ]);
+      // Fetch cart items
+      fetch(`http://localhost:3001/cart?userId=${user.id}`)
+        .then(response => response.json())
+        .then(data => setCartItems(data))
+        .catch(error => console.error('Error fetching cart items:', error));
 
-      // Mock order history
-      setOrderHistory([
-        { id: 'ORD-001', date: '2023-05-15', total: 119.97, status: 'Delivered', items: 3 },
-        { id: 'ORD-002', date: '2023-04-22', total: 89.99, status: 'Delivered', items: 2 },
-        { id: 'ORD-003', date: '2023-03-10', total: 199.99, status: 'Delivered', items: 1 },
-      ]);
+      // Fetch orders
+      fetch(`http://localhost:3001/orders?userId=${user.id}`)
+        .then(response => response.json())
+        .then(data => {
+          // Sort orders by date (newest first)
+          const sortedOrders = data.sort((a, b) => 
+            new Date(b.createdAt) - new Date(a.createdAt)
+          );
 
-      // Mock active orders
-      setActiveOrders([
-        { id: 'ORD-004', date: '2023-06-01', total: 149.99, status: 'Processing', items: 2, estimatedDelivery: '2023-06-05' },
-        { id: 'ORD-005', date: '2023-06-10', total: 79.99, status: 'Shipped', items: 1, estimatedDelivery: '2023-06-12', trackingNumber: 'TRK123456789' },
-      ]);
+          // Separate orders into active and history
+          const active = sortedOrders.filter(order => 
+            ['pending', 'confirmed', 'processing', 'shipped'].includes(order.status)
+          );
+          const history = sortedOrders.filter(order => 
+            ['delivered', 'cancelled'].includes(order.status)
+          );
+
+          // Add estimated delivery dates for active orders
+          const activeWithDelivery = active.map(order => ({
+            ...order,
+            estimatedDelivery: order.status === 'processing' 
+              ? new Date(new Date(order.createdAt).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from order date
+              : new Date(new Date(order.createdAt).getTime() + 3 * 24 * 60 * 60 * 1000).toISOString() // 3 days from order date
+          }));
+
+          // Update payment status for delivered orders
+          const updatedHistory = history.map(order => ({
+            ...order,
+            paymentStatus: order.status === 'delivered' ? 'delivered' : order.paymentStatus
+          }));
+
+          setActiveOrders(activeWithDelivery);
+          setOrderHistory(updatedHistory);
+        })
+        .catch(error => {
+          console.error('Error fetching orders:', error);
+          message.error('Failed to load orders');
+        });
     }
   }, [user]);
 
@@ -131,17 +158,103 @@ const Profile = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Delivered':
-        return 'green';
-      case 'Processing':
-        return 'blue';
-      case 'Shipped':
+      case 'pending':
+        return 'warning';
+      case 'confirmed':
+        return 'success';
+      case 'processing':
+        return 'processing';
+      case 'shipped':
         return 'purple';
-      case 'Cancelled':
-        return 'red';
+      case 'delivered':
+        return 'success';
       default:
         return 'default';
     }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending':
+        return <CheckCircleOutlined />;
+      case 'confirmed':
+        return <CheckCircleOutlined />;
+      case 'processing':
+        return <SyncOutlined />;
+      case 'shipped':
+        return <CarOutlined />;
+      case 'delivered':
+        return <ShoppingOutlined />;
+      default:
+        return null;
+    }
+  };
+
+  const getOrderStatusSteps = (status) => {
+    const steps = [
+      {
+        title: 'Order Placed',
+        icon: <CheckCircleOutlined />,
+        status: 'finish'
+      },
+      {
+        title: 'Confirmed',
+        icon: <CheckCircleOutlined />,
+        status: ['confirmed', 'processing', 'shipped', 'delivered'].includes(status) ? 'finish' : 'wait'
+      },
+      {
+        title: 'Processing',
+        icon: <SyncOutlined />,
+        status: status === 'processing' ? 'process' : 
+                ['shipped', 'delivered'].includes(status) ? 'finish' : 'wait'
+      },
+      {
+        title: 'Shipped',
+        icon: <CarOutlined />,
+        status: status === 'shipped' ? 'process' : 
+                status === 'delivered' ? 'finish' : 'wait'
+      },
+      {
+        title: 'Delivered',
+        icon: <ShoppingOutlined />,
+        status: status === 'delivered' ? 'finish' : 'wait'
+      }
+    ];
+
+    if (status === 'cancelled') {
+      steps.forEach(step => {
+        if (step.status === 'process') {
+          step.status = 'error';
+          step.icon = <CloseCircleOutlined />;
+        }
+      });
+    }
+
+    return steps;
+  };
+
+  const handleRemoveFromCart = async (cartItemId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/cart/${cartItemId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Update local state after successful deletion
+        setCartItems(prevItems => prevItems.filter(item => item.id !== cartItemId));
+        message.success('Item removed from cart');
+      } else {
+        message.error('Failed to remove item from cart');
+      }
+    } catch (error) {
+      console.error('Error removing item from cart:', error);
+      message.error('Error removing item from cart');
+    }
+  };
+
+  const handleViewOrder = (order) => {
+    setSelectedOrder(order);
+    setIsOrderModalVisible(true);
   };
 
   const cartColumns = [
@@ -151,7 +264,7 @@ const Profile = () => {
       key: 'name',
       render: (text, record) => (
         <div className="flex items-center">
-          <img src={record.image} alt={text} className="w-12 h-12 object-cover rounded mr-3" />
+          <img src={record.imageUrl} alt={text} className="w-12 h-12 object-cover rounded mr-3" />
           <span>{text}</span>
         </div>
       ),
@@ -160,7 +273,7 @@ const Profile = () => {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price) => `$${price.toFixed(2)}`,
+      render: (price) => `${price.toLocaleString('vi-VN')}₫`,
     },
     {
       title: 'Quantity',
@@ -170,13 +283,19 @@ const Profile = () => {
     {
       title: 'Total',
       key: 'total',
-      render: (_, record) => `$${(record.price * record.quantity).toFixed(2)}`,
+      render: (_, record) => `${(record.price * record.quantity).toLocaleString('vi-VN')}₫`,
     },
     {
       title: 'Action',
       key: 'action',
-      render: () => (
-        <Button type="link" danger>Remove</Button>
+      render: (_, record) => (
+        <Button 
+          type="link" 
+          danger 
+          onClick={() => handleRemoveFromCart(record.id)}
+        >
+          Remove
+        </Button>
       ),
     },
   ];
@@ -186,49 +305,106 @@ const Profile = () => {
       title: 'Order ID',
       dataIndex: 'id',
       key: 'id',
+      width: 100,
     },
     {
       title: 'Date',
-      dataIndex: 'date',
-      key: 'date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 120,
       render: (date) => formatDateSafely(date, 'MMM d, yyyy'),
     },
     {
       title: 'Items',
       dataIndex: 'items',
       key: 'items',
+      width: 80,
+      render: (items) => items.length,
     },
     {
       title: 'Total',
       dataIndex: 'total',
       key: 'total',
-      render: (total) => `$${total.toFixed(2)}`,
+      width: 120,
+      render: (total) => `${total.toLocaleString('vi-VN')}₫`,
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status) => (
-        <Tag color={getStatusColor(status)}>{status}</Tag>
+        <Tag color={getStatusColor(status)} icon={getStatusIcon(status)}>
+          {status.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: 80,
+      render: (_, record) => (
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewOrder(record)}
+          className="text-blue-500 hover:text-blue-700"
+        />
       ),
     },
   ];
 
   const activeOrderColumns = [
-    ...orderColumns,
     {
-      title: 'Estimated Delivery',
-      dataIndex: 'estimatedDelivery',
-      key: 'estimatedDelivery',
+      title: 'Order ID',
+      dataIndex: 'id',
+      key: 'id',
+      width: 100,
+    },
+    {
+      title: 'Date',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      width: 120,
       render: (date) => formatDateSafely(date, 'MMM d, yyyy'),
     },
     {
-      title: 'Tracking',
-      dataIndex: 'trackingNumber',
-      key: 'trackingNumber',
-      render: (tracking) => tracking ? (
-        <Button type="link" size="small">View</Button>
-      ) : null,
+      title: 'Items',
+      dataIndex: 'items',
+      key: 'items',
+      width: 80,
+      render: (items) => items.length,
+    },
+    {
+      title: 'Total',
+      dataIndex: 'total',
+      key: 'total',
+      width: 120,
+      render: (total) => `${total.toLocaleString('vi-VN')}₫`,
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status) => (
+        <Tag color={getStatusColor(status)} icon={getStatusIcon(status)}>
+          {status.toUpperCase()}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      width: 80,
+      render: (_, record) => (
+        <Button
+          type="text"
+          icon={<EyeOutlined />}
+          onClick={() => handleViewOrder(record)}
+          className="text-blue-500 hover:text-blue-700"
+        />
+      ),
     },
   ];
 
@@ -240,10 +416,10 @@ const Profile = () => {
       key: 'name',
       render: (text, record) => (
         <div className="flex items-center">
-          <img src={record.image} alt={text} className="w-10 h-10 object-cover rounded mr-2" />
+          <img src={record.imageUrl} alt={text} className="w-10 h-10 object-cover rounded mr-2" />
           <div>
             <div className="font-medium">{text}</div>
-            <div className="text-xs text-gray-500">Qty: {record.quantity} × ${record.price.toFixed(2)}</div>
+            <div className="text-xs text-gray-500">Qty: {record.quantity} × {record.price.toLocaleString('vi-VN')}₫</div>
           </div>
         </div>
       ),
@@ -251,8 +427,15 @@ const Profile = () => {
     {
       title: 'Action',
       key: 'action',
-      render: () => (
-        <Button type="link" danger size="small">Remove</Button>
+      render: (_, record) => (
+        <Button 
+          type="link" 
+          danger 
+          size="small"
+          onClick={() => handleRemoveFromCart(record.id)}
+        >
+          Remove
+        </Button>
       ),
     },
   ];
@@ -263,19 +446,26 @@ const Profile = () => {
       dataIndex: 'id',
       key: 'id',
       render: (id, record) => (
-        <div>
-          <div className="font-medium">{id}</div>
-          <div className="text-xs text-gray-500">{formatDateSafely(record.date, 'MMM d, yyyy')}</div>
-          <div className="text-xs">Items: {record.items} | ${record.total.toFixed(2)}</div>
+        <div className="space-y-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="font-medium">{id}</div>
+              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'MMM d, yyyy')}</div>
+            </div>
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewOrder(record)}
+              className="text-blue-500 hover:text-blue-700"
+            />
+          </div>
+          <div className="text-xs">Items: {record.items.length} | {record.total.toLocaleString('vi-VN')}₫</div>
+          <div>
+            <Tag color={getStatusColor(record.status)} icon={getStatusIcon(record.status)}>
+              {record.status.toUpperCase()}
+            </Tag>
+          </div>
         </div>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status) => (
-        <Tag color={getStatusColor(status)}>{status}</Tag>
       ),
     },
   ];
@@ -286,24 +476,25 @@ const Profile = () => {
       dataIndex: 'id',
       key: 'id',
       render: (id, record) => (
-        <div>
-          <div className="font-medium">{id}</div>
-          <div className="text-xs text-gray-500">{formatDateSafely(record.date, 'MMM d, yyyy')}</div>
-          <div className="text-xs">Items: {record.items} | ${record.total.toFixed(2)}</div>
-          <div className="text-xs text-gray-500">Est. Delivery: {formatDateSafely(record.estimatedDelivery, 'MMM d')}</div>
-        </div>
-      ),
-    },
-    {
-      title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status, record) => (
-        <div>
-          <Tag color={getStatusColor(status)}>{status}</Tag>
-          {record.trackingNumber && (
-            <Button type="link" size="small" className="p-0 mt-1">Track</Button>
-          )}
+        <div className="space-y-2">
+          <div className="flex justify-between items-start">
+            <div>
+              <div className="font-medium">{id}</div>
+              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'MMM d, yyyy')}</div>
+            </div>
+            <Button
+              type="text"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewOrder(record)}
+              className="text-blue-500 hover:text-blue-700"
+            />
+          </div>
+          <div className="text-xs">Items: {record.items.length} | {record.total.toLocaleString('vi-VN')}₫</div>
+          <div>
+            <Tag color={getStatusColor(record.status)} icon={getStatusIcon(record.status)}>
+              {record.status.toUpperCase()}
+            </Tag>
+          </div>
         </div>
       ),
     },
@@ -369,6 +560,34 @@ const Profile = () => {
 
   const handleAvatarClick = () => {
     fileInputRef.current.click();
+  };
+
+  const getPaymentStatusColor = (status) => {
+    switch (status) {
+      case 'paid':
+      case 'delivered':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'failed':
+        return 'error';
+      default:
+        return 'default';
+    }
+  };
+
+  const getPaymentStatusIcon = (status) => {
+    switch (status) {
+      case 'paid':
+      case 'delivered':
+        return <CheckCircleOutlined />;
+      case 'pending':
+        return <ClockCircleOutlined />;
+      case 'failed':
+        return <CloseCircleOutlined />;
+      default:
+        return null;
+    }
   };
 
   if (loading) {
@@ -535,17 +754,42 @@ const Profile = () => {
                   size={isMobile ? "small" : "default"}
                 />
               </div>
-              <div className="flex justify-end mt-4 sm:mt-6">
-                <Button type="primary" size={isMobile ? "middle" : "large"} className="bg-navy-600 hover:bg-navy-700">
-                  Proceed to Checkout
-                </Button>
+              <div className="mt-4 sm:mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex justify-between items-center mb-4">
+                  <span className="text-lg font-medium text-gray-700">Total Amount:</span>
+                  <span className="text-xl font-bold text-navy-600">
+                    {cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toLocaleString('vi-VN')}₫
+                  </span>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <Button 
+                    type="default" 
+                    size={isMobile ? "middle" : "large"}
+                    className="w-full sm:w-auto"
+                    onClick={() => window.location.href = '/products'}
+                  >
+                    Continue Shopping
+                  </Button>
+                  <Button 
+                    type="primary" 
+                    size={isMobile ? "middle" : "large"} 
+                    className="bg-navy-600 hover:bg-navy-700 w-full sm:w-auto"
+                    onClick={() => window.location.href = '/checkout'}
+                  >
+                    Proceed to Checkout
+                  </Button>
+                </div>
               </div>
             </>
           ) : (
             <div className="text-center py-6 sm:py-8">
               <ShoppingCartOutlined className="text-4xl sm:text-5xl text-gray-300 mb-3 sm:mb-4" />
               <p className="text-lg sm:text-xl text-gray-500">Your cart is empty</p>
-              <Button type="primary" className="mt-3 sm:mt-4 bg-navy-600 hover:bg-navy-700">
+              <Button 
+                type="primary" 
+                className="mt-3 sm:mt-4 bg-navy-600 hover:bg-navy-700"
+                onClick={() => window.location.href = '/products'}
+              >
                 Start Shopping
               </Button>
             </div>
@@ -615,7 +859,7 @@ const Profile = () => {
   }
 
   return (
-    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+    <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 min-h-screen flex flex-col">
       <style>
         {`
           .bg-navy-100 {
@@ -633,102 +877,260 @@ const Profile = () => {
         `}
       </style>
       
-      <Tabs 
-        activeKey={activeTab} 
-        onChange={setActiveTab} 
-        items={items}
-        className="mb-4 sm:mb-6"
-        tabPosition={isMobile ? "top" : "top"}
-        centered={isMobile}
-      />
+      <div className="flex-grow">
+        <Tabs 
+          activeKey={activeTab} 
+          onChange={setActiveTab} 
+          items={items}
+          className="mb-4 sm:mb-6"
+          tabPosition={isMobile ? "top" : "top"}
+          centered={isMobile}
+        />
+      </div>
 
-      <Modal
-        title="Edit Profile"
-        open={isModalVisible}
-        onOk={handleSave}
-        onCancel={() => setIsModalVisible(false)}
-        okText="Save"
-        cancelText="Cancel"
-        width={isMobile ? "95%" : 600}
-      >
-        <Form
-          form={form}
-          layout="vertical"
+      <div className="mb-24">
+        <Modal
+          title="Edit Profile"
+          open={isModalVisible}
+          onOk={handleSave}
+          onCancel={() => setIsModalVisible(false)}
+          okText="Save"
+          cancelText="Cancel"
+          width={isMobile ? "95%" : 600}
         >
-          <Form.Item
-            name="name"
-            label="Name"
-            rules={[{ required: true, message: 'Please input your name!' }]}
+          <Form
+            form={form}
+            layout="vertical"
           >
-            <Input prefix={<UserOutlined />} />
-          </Form.Item>
-          <Form.Item
-            name="email"
-            label="Email"
-            rules={[
-              { type: 'email', message: 'Please enter a valid email!' }
-            ]}
-          >
-            <Input prefix={<FaEnvelope className="text-gray-400" />} />
-          </Form.Item>
-          <Form.Item
-            name="birthday"
-            label="Birthday"
-          >
-            <DatePicker className="w-full" />
-          </Form.Item>
-          <Form.Item
-            name="phone"
-            label="Phone Number"
-          >
-            <Input prefix={<FaPhone className="text-gray-400" />} />
-          </Form.Item>
-          <Form.Item
-            name="address"
-            label="Address"
-          >
-            <Input.TextArea rows={3} prefix={<FaMapMarkerAlt className="text-gray-400" />} />
-          </Form.Item>
-        </Form>
-      </Modal>
+            <Form.Item
+              name="name"
+              label="Name"
+              rules={[{ required: true, message: 'Please input your name!' }]}
+            >
+              <Input prefix={<UserOutlined />} />
+            </Form.Item>
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { type: 'email', message: 'Please enter a valid email!' }
+              ]}
+            >
+              <Input prefix={<FaEnvelope className="text-gray-400" />} />
+            </Form.Item>
+            <Form.Item
+              name="birthday"
+              label="Birthday"
+            >
+              <DatePicker className="w-full" />
+            </Form.Item>
+            <Form.Item
+              name="phone"
+              label="Phone Number"
+            >
+              <Input prefix={<FaPhone className="text-gray-400" />} />
+            </Form.Item>
+            <Form.Item
+              name="address"
+              label="Address"
+            >
+              <Input.TextArea rows={3} prefix={<FaMapMarkerAlt className="text-gray-400" />} />
+            </Form.Item>
+          </Form>
+        </Modal>
 
-      <Modal
-        title="Change Profile Picture"
-        open={isAvatarModalVisible}
-        onCancel={() => setIsAvatarModalVisible(false)}
-        footer={null}
-        width={isMobile ? "95%" : 400}
-      >
-        <div className="flex flex-col items-center">
-          <div className="mb-4">
-            <Avatar
-              size={120}
-              src={avatarUrl || user.imageUrl}
-              icon={<UserOutlined />}
-              className="border-4 border-navy-600 shadow-lg"
+        <Modal
+          title="Change Profile Picture"
+          open={isAvatarModalVisible}
+          onCancel={() => setIsAvatarModalVisible(false)}
+          footer={null}
+          width={isMobile ? "95%" : 400}
+        >
+          <div className="flex flex-col items-center">
+            <div className="mb-4">
+              <Avatar
+                size={120}
+                src={avatarUrl || user.imageUrl}
+                icon={<UserOutlined />}
+                className="border-4 border-navy-600 shadow-lg"
+              />
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              accept="image/*"
+              style={{ display: 'none' }}
             />
+            <Button 
+              icon={<UploadOutlined />} 
+              className="bg-navy-600 hover:bg-navy-700 text-white"
+              onClick={handleAvatarClick}
+              loading={isUploading}
+              disabled={isUploading}
+            >
+              {isUploading ? 'Uploading...' : 'Upload New Picture'}
+            </Button>
+            <p className="text-gray-500 text-sm mt-2">
+              Recommended: Square image, at least 200x200 pixels
+            </p>
           </div>
-          <input 
-            type="file" 
-            ref={fileInputRef}
-            onChange={handleAvatarChange}
-            accept="image/*"
-            style={{ display: 'none' }}
-          />
-          <Button 
-            icon={<UploadOutlined />} 
-            className="bg-navy-600 hover:bg-navy-700 text-white"
-            onClick={handleAvatarClick}
-            loading={isUploading}
-            disabled={isUploading}
-          >
-            {isUploading ? 'Uploading...' : 'Upload New Picture'}
-          </Button>
-          <p className="text-gray-500 text-sm mt-2">
-            Recommended: Square image, at least 200x200 pixels
-          </p>
-        </div>
-      </Modal>
+        </Modal>
+
+        {/* Order Details Modal */}
+        <Modal
+          title={
+            <div className="flex items-center space-x-2">
+              <InfoCircleOutlined className="text-blue-500" />
+              <span>Order Details #{selectedOrder?.id}</span>
+            </div>
+          }
+          open={isOrderModalVisible}
+          onCancel={() => setIsOrderModalVisible(false)}
+          footer={null}
+          width={isMobile ? "95%" : 600}
+        >
+          {selectedOrder && (
+            <div className="mt-4 space-y-4">
+              {/* Order Status and Progress */}
+              <Card size="small" title={
+                <div className="flex items-center space-x-2">
+                  <ClockCircleOutlined className="text-blue-500" />
+                  <span>Order Status</span>
+                </div>
+              }>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Status:</span>
+                    <Tag color={getStatusColor(selectedOrder.status)} icon={getStatusIcon(selectedOrder.status)}>
+                      {selectedOrder.status.toUpperCase()}
+                    </Tag>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Order Date: {formatDateSafely(selectedOrder.createdAt, 'PPP')}
+                  </div>
+                  <Steps
+                    items={getOrderStatusSteps(selectedOrder.status)}
+                    size="small"
+                    className="mt-2"
+                  />
+                </div>
+              </Card>
+
+              {/* Shipping Information */}
+              <Card size="small" title={
+                <div className="flex items-center space-x-2">
+                  <EnvironmentOutlined className="text-blue-500" />
+                  <span>Shipping Information</span>
+                </div>
+              }>
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-2">
+                    <EnvironmentOutlined className="text-gray-400 mt-1" />
+                    <div>
+                      <div className="font-medium">Delivery Address</div>
+                      <div className="text-gray-600">{selectedOrder.shippingAddress || 'Not provided'}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <PhoneOutlined className="text-gray-400" />
+                    <div>
+                      <div className="font-medium">Contact Number</div>
+                      <div className="text-gray-600">{selectedOrder.contactNumber || 'Not provided'}</div>
+                    </div>
+                  </div>
+                  {selectedOrder.trackingNumber && (
+                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <CarOutlined className="text-blue-500" />
+                        <span className="font-medium">Tracking Number:</span>
+                        <span>{selectedOrder.trackingNumber}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Order Items */}
+              <Card size="small" title={
+                <div className="flex items-center space-x-2">
+                  <ShoppingCartOutlined className="text-blue-500" />
+                  <span>Order Items</span>
+                </div>
+              }>
+                <Table
+                  dataSource={selectedOrder.items}
+                  columns={[
+                    {
+                      title: 'Product',
+                      dataIndex: 'name',
+                      key: 'name',
+                      render: (text, record) => (
+                        <Space>
+                          <img src={record.imageUrl} alt={text} className="w-8 h-8 object-cover rounded" />
+                          <span className="text-sm">{text}</span>
+                        </Space>
+                      ),
+                    },
+                    {
+                      title: 'Price',
+                      dataIndex: 'price',
+                      key: 'price',
+                      render: (price) => `${price.toLocaleString('vi-VN')}₫`,
+                      width: 100,
+                    },
+                    {
+                      title: 'Qty',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                      width: 60,
+                    },
+                    {
+                      title: 'Total',
+                      key: 'total',
+                      render: (_, record) => `${(record.price * record.quantity).toLocaleString('vi-VN')}₫`,
+                      width: 100,
+                    },
+                  ]}
+                  pagination={false}
+                  size="small"
+                  scroll={{ y: 200 }}
+                />
+              </Card>
+
+              {/* Payment Information */}
+              <Card size="small" title={
+                <div className="flex items-center space-x-2">
+                  <DollarOutlined className="text-blue-500" />
+                  <span>Payment Information</span>
+                </div>
+              }>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Payment Status:</span>
+                    <Tag color={getPaymentStatusColor(selectedOrder.paymentStatus)} icon={getPaymentStatusIcon(selectedOrder.paymentStatus)}>
+                      {selectedOrder.paymentStatus?.toUpperCase() || 'PENDING'}
+                    </Tag>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="flex items-center">
+                      <CreditCardOutlined className="mr-2" />
+                      {selectedOrder.paymentMethod || 'Credit Card'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Total Amount:</span>
+                    <span className="font-medium text-lg">
+                      {selectedOrder.total.toLocaleString('vi-VN')}₫
+                    </span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+        </Modal>
+      </div>
     </div>
   );
 };
