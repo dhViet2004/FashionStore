@@ -47,7 +47,8 @@
       "role": "user",
       "google_id": "114249137217624289558",
       "id": 7,
-      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJUIbTQbw55fnDI0jkY_eRcUKEeH-Qlwq4uX6-877ZzLZzLXD8=s96-c"
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJUIbTQbw55fnDI0jkY_eRcUKEeH-Qlwq4uX6-877ZzLZzLXD8=s96-c",
+      "name": "Đặng Hoàng Việt"
     },
     {
       "username": "dhoangviet1612",
@@ -494,6 +495,16 @@
       "minOrder": 200000,
       "startDate": "2024-01-01",
       "endDate": "2024-12-31",
+      "usedBy": []
+    },
+    {
+      "code": "30THANG4",
+      "type": "percentage",
+      "discount": 10,
+      "minOrder": 500000,
+      "startDate": "2025-04-30",
+      "endDate": "2025-05-31",
+      "id": "1746449354104",
       "usedBy": []
     }
   ],

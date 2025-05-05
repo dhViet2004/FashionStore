@@ -21,7 +21,8 @@ import {
   FallOutlined,
   SyncOutlined,
   EditOutlined,
-  DeleteOutlined
+  DeleteOutlined,
+  EditFilled
 } from '@ant-design/icons';
 import { FaShoppingBag, FaUsers, FaChartLine, FaCog, FaBox, FaTags, FaClipboardList } from 'react-icons/fa';
 import ProductManager from '../../components/ProductManager';
@@ -98,6 +99,10 @@ const Admin = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
+  const [promotions, setPromotions] = useState([]);
+  const [isPromotionModalVisible, setIsPromotionModalVisible] = useState(false);
+  const [editingPromotion, setEditingPromotion] = useState(null);
+  const [promotionForm] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     try {
@@ -244,6 +249,101 @@ const Admin = () => {
     form.resetFields();
   };
 
+  const handlePromotionSubmit = async () => {
+    try {
+      const values = await promotionForm.validateFields();
+      const voucherData = {
+        ...values,
+        id: editingPromotion?.id || Date.now().toString(),
+        usedBy: editingPromotion?.usedBy || []
+      };
+
+      if (editingPromotion) {
+        // Update existing voucher
+        const response = await fetch(`http://localhost:3001/vouchers/${editingPromotion.id}`, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(voucherData),
+        });
+        
+        if (response.ok) {
+          message.success('Voucher updated successfully');
+          setPromotions(promotions.map(p => p.id === editingPromotion.id ? voucherData : p));
+        }
+      } else {
+        // Create new voucher
+        const response = await fetch('http://localhost:3001/vouchers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(voucherData),
+        });
+        
+        if (response.ok) {
+          message.success('Voucher created successfully');
+          setPromotions([...promotions, voucherData]);
+        }
+      }
+      
+      setIsPromotionModalVisible(false);
+      promotionForm.resetFields();
+      setEditingPromotion(null);
+    } catch (error) {
+      console.error('Error saving voucher:', error);
+      message.error('Error saving voucher');
+    }
+  };
+
+  const handleDeletePromotion = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:3001/vouchers/${id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        message.success('Voucher deleted successfully');
+        setPromotions(promotions.filter(p => p.id !== id));
+      }
+    } catch (error) {
+      console.error('Error deleting voucher:', error);
+      message.error('Error deleting voucher');
+    }
+  };
+
+  const handleEditPromotion = (promotion) => {
+    setEditingPromotion(promotion);
+    promotionForm.setFieldsValue({
+      code: promotion.code,
+      discount: promotion.discount,
+      type: promotion.type,
+      minOrder: promotion.minOrder,
+      startDate: promotion.startDate,
+      endDate: promotion.endDate
+    });
+    setIsPromotionModalVisible(true);
+  };
+
+  useEffect(() => {
+    const fetchVouchers = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/vouchers');
+        if (response.ok) {
+          const data = await response.json();
+          setPromotions(data);
+        }
+      } catch (error) {
+        console.error('Error fetching vouchers:', error);
+      }
+    };
+
+    if (activeSection === 'promotions') {
+      fetchVouchers();
+    }
+  }, [activeSection]);
+
   const renderActiveSection = () => {
     switch (activeSection) {
       case 'overview':
@@ -252,91 +352,84 @@ const Admin = () => {
         return <ProductManager />;
       case 'orders':
         return <OrderManagement />;
-      case 'users':
+      case 'promotions':
         return (
           <div className="space-y-6">
-            <Card title="Customer Management" className="shadow-sm">
+            <Card title="Voucher Management" className="shadow-sm">
+              <div className="mb-4">
+                <Button 
+                  type="primary" 
+                  onClick={() => {
+                    setEditingPromotion(null);
+                    promotionForm.resetFields();
+                    setIsPromotionModalVisible(true);
+                  }}
+                >
+                  Add New Voucher
+                </Button>
+              </div>
               <Table 
-                dataSource={users}
+                dataSource={promotions}
                 columns={[
                   {
-                    title: 'ID',
-                    dataIndex: 'id',
-                    key: 'id',
-                    width: 80,
+                    title: 'Code',
+                    dataIndex: 'code',
+                    key: 'code',
                   },
                   {
-                    title: 'Avatar',
-                    dataIndex: 'imageUrl',
-                    key: 'imageUrl',
-                    width: 80,
-                    render: (imageUrl) => (
-                      <Avatar 
-                        src={imageUrl || 'https://joeschmoe.io/api/v1/random'} 
-                        size="large"
-                      />
-                    ),
+                    title: 'Discount',
+                    dataIndex: 'discount',
+                    key: 'discount',
+                    render: (discount, record) => 
+                      record.type === 'percentage' ? `${discount}%` : `${discount.toLocaleString('vi-VN')}₫`,
                   },
                   {
-                    title: 'Name',
-                    dataIndex: 'name',
-                    key: 'name',
-                    render: (name) => name || 'Not provided',
-                  },
-                  {
-                    title: 'Username',
-                    dataIndex: 'username',
-                    key: 'username',
-                  },
-                  {
-                    title: 'Email',
-                    dataIndex: 'email',
-                    key: 'email',
-                    render: (email) => email || 'Not provided',
-                  },
-                  {
-                    title: 'Role',
-                    dataIndex: 'role',
-                    key: 'role',
-                    width: 100,
-                    render: (role) => (
-                      <Tag color={role === 'admin' ? 'blue' : 'green'}>
-                        {role.toUpperCase()}
+                    title: 'Type',
+                    dataIndex: 'type',
+                    key: 'type',
+                    render: (type) => (
+                      <Tag color={type === 'percentage' ? 'blue' : 'green'}>
+                        {type.toUpperCase()}
                       </Tag>
                     ),
                   },
                   {
-                    title: 'Join Date',
-                    dataIndex: 'dateCreate',
-                    key: 'dateCreate',
-                    render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : 'Not provided',
+                    title: 'Min Order',
+                    dataIndex: 'minOrder',
+                    key: 'minOrder',
+                    render: (minOrder) => `${minOrder.toLocaleString('vi-VN')}₫`,
                   },
                   {
-                    title: 'Phone',
-                    dataIndex: 'phoneNumber',
-                    key: 'phoneNumber',
-                    render: (phone) => phone || 'Not provided',
+                    title: 'Start Date',
+                    dataIndex: 'startDate',
+                    key: 'startDate',
+                    render: (date) => new Date(date).toLocaleDateString(),
                   },
                   {
-                    title: 'Address',
-                    dataIndex: 'address',
-                    key: 'address',
-                    render: (address) => address || 'Not provided',
+                    title: 'End Date',
+                    dataIndex: 'endDate',
+                    key: 'endDate',
+                    render: (date) => new Date(date).toLocaleDateString(),
                   },
                   {
                     title: 'Actions',
                     key: 'actions',
-                    width: 120,
                     render: (_, record) => (
                       <Space>
-                        <Button 
-                          type="primary" 
-                          size="small"
-                          icon={<EditOutlined />}
-                          onClick={() => handleEditUser(record)}
-                        >
-                          Edit
-                        </Button>
+                        <Tooltip title="Edit">
+                          <Button 
+                            icon={<EditFilled style={{ color: '#1890ff' }} />} 
+                            onClick={() => handleEditPromotion(record)}
+                            className="border-blue-500 text-blue-500 hover:bg-blue-50"
+                          />
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                          <Button 
+                            danger 
+                            icon={<DeleteOutlined />}
+                            onClick={() => handleDeletePromotion(record.id)}
+                          />
+                        </Tooltip>
                       </Space>
                     ),
                   }
@@ -594,6 +687,99 @@ const Admin = () => {
               />
             </Card>
           )}
+
+          {selectedCard === 'customers' && (
+            <Card title="Customer Management" className="shadow-sm">
+              <Table 
+                dataSource={users}
+                columns={[
+                  {
+                    title: 'ID',
+                    dataIndex: 'id',
+                    key: 'id',
+                    width: 80,
+                  },
+                  {
+                    title: 'Avatar',
+                    dataIndex: 'imageUrl',
+                    key: 'imageUrl',
+                    width: 80,
+                    render: (imageUrl) => (
+                      <Avatar 
+                        src={imageUrl || 'https://joeschmoe.io/api/v1/random'} 
+                        size="large"
+                      />
+                    ),
+                  },
+                  {
+                    title: 'Name',
+                    dataIndex: 'name',
+                    key: 'name',
+                    render: (name) => name || 'Not provided',
+                  },
+                  {
+                    title: 'Username',
+                    dataIndex: 'username',
+                    key: 'username',
+                  },
+                  {
+                    title: 'Email',
+                    dataIndex: 'email',
+                    key: 'email',
+                    render: (email) => email || 'Not provided',
+                  },
+                  {
+                    title: 'Role',
+                    dataIndex: 'role',
+                    key: 'role',
+                    width: 100,
+                    render: (role) => (
+                      <Tag color={role === 'admin' ? 'blue' : 'green'}>
+                        {role.toUpperCase()}
+                      </Tag>
+                    ),
+                  },
+                  {
+                    title: 'Join Date',
+                    dataIndex: 'dateCreate',
+                    key: 'dateCreate',
+                    render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : 'Not provided',
+                  },
+                  {
+                    title: 'Phone',
+                    dataIndex: 'phoneNumber',
+                    key: 'phoneNumber',
+                    render: (phone) => phone || 'Not provided',
+                  },
+                  {
+                    title: 'Address',
+                    dataIndex: 'address',
+                    key: 'address',
+                    render: (address) => address || 'Not provided',
+                  },
+                  {
+                    title: 'Actions',
+                    key: 'actions',
+                    width: 120,
+                    render: (_, record) => (
+                      <Space>
+                        <Button 
+                          type="primary" 
+                          size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => handleEditUser(record)}
+                        >
+                          Edit
+                        </Button>
+                      </Space>
+                    ),
+                  }
+                ]}
+                rowKey="id"
+                pagination={{ pageSize: 5 }}
+              />
+            </Card>
+          )}
         </>
       )}
     </div>
@@ -654,16 +840,16 @@ const Admin = () => {
             </div>
 
             <div 
-              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'users' ? 'ring-1 ring-blue-500' : ''}`}
-              onClick={() => handleSectionClick('users')}
+              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'promotions' ? 'ring-1 ring-blue-500' : ''}`}
+              onClick={() => handleSectionClick('promotions')}
             >
               <div className="flex items-center space-x-3">
                 <div className="bg-red-50 rounded-full p-2">
-                  <FaUsers className="text-red-500 text-lg" />
+                  <TagsOutlined className="text-red-500 text-lg" />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-gray-800">Users</h2>
-                  <p className="text-sm text-gray-500">Manage users</p>
+                  <h2 className="text-base font-semibold text-gray-800">Promotions</h2>
+                  <p className="text-sm text-gray-500">Manage promotions</p>
                 </div>
               </div>
             </div>
@@ -737,6 +923,123 @@ const Admin = () => {
             label="Address"
           >
             <Input.TextArea rows={3} />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Add Promotion Modal */}
+      <Modal
+        title={editingPromotion ? "Edit Voucher" : "Add New Voucher"}
+        open={isPromotionModalVisible}
+        onOk={handlePromotionSubmit}
+        onCancel={() => {
+          setIsPromotionModalVisible(false);
+          promotionForm.resetFields();
+          setEditingPromotion(null);
+        }}
+        width={600}
+      >
+        <Form
+          form={promotionForm}
+          layout="vertical"
+        >
+          <Form.Item
+            name="code"
+            label="Voucher Code"
+            rules={[{ required: true, message: 'Please input the voucher code!' }]}
+          >
+            <Input />
+          </Form.Item>
+          
+          <Form.Item
+            name="type"
+            label="Discount Type"
+            rules={[{ required: true, message: 'Please select the discount type!' }]}
+          >
+            <Select>
+              <Select.Option value="percentage">Percentage</Select.Option>
+              <Select.Option value="fixed">Fixed Amount</Select.Option>
+            </Select>
+          </Form.Item>
+          
+          <Form.Item
+            name="discount"
+            label="Discount Value"
+            rules={[
+              { required: true, message: 'Please input the discount value!' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  const type = getFieldValue('type');
+                  const numValue = Number(value);
+                  if (type === 'percentage') {
+                    if (numValue < 0 || numValue > 100) {
+                      return Promise.reject(new Error('Percentage must be between 0 and 100!'));
+                    }
+                  } else {
+                    if (numValue <= 0) {
+                      return Promise.reject(new Error('Fixed amount must be greater than 0!'));
+                    }
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
+            getValueFromEvent={(e) => Number(e.target.value)}
+          >
+            <Input 
+              type="number" 
+              addonAfter={({ getFieldValue }) => getFieldValue('type') === 'percentage' ? '%' : 'VNĐ'}
+              formatter={(value, { getFieldValue }) => {
+                const type = getFieldValue('type');
+                if (type === 'percentage') {
+                  return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+                }
+                return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+              }}
+              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="minOrder"
+            label="Minimum Order Amount (VNĐ)"
+            rules={[
+              { required: true, message: 'Please input the minimum order amount!' },
+              {
+                validator(_, value) {
+                  const numValue = Number(value);
+                  if (isNaN(numValue) || numValue < 0) {
+                    return Promise.reject(new Error('Minimum order must be greater than or equal to 0!'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
+            getValueFromEvent={(e) => Number(e.target.value)}
+          >
+            <Input 
+              type="number" 
+              min={0} 
+              addonAfter="VNĐ"
+              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+            />
+          </Form.Item>
+          
+          <Form.Item
+            name="startDate"
+            label="Start Date"
+            rules={[{ required: true, message: 'Please select the start date!' }]}
+          >
+            <Input type="date" />
+          </Form.Item>
+          
+          <Form.Item
+            name="endDate"
+            label="End Date"
+            rules={[{ required: true, message: 'Please select the end date!' }]}
+          >
+            <Input type="date" />
           </Form.Item>
         </Form>
       </Modal>
