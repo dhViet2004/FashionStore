@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, Row, Col, Statistic, Typography, Avatar, Badge, Button, Table, Tag, Space, Tooltip, Progress, Spin, message, Modal, Form, Input, Select } from 'antd';
+import { Column, Line } from '@ant-design/plots';
 import { 
   ShoppingOutlined, 
   UserOutlined, 
@@ -506,120 +507,101 @@ const Admin = () => {
           {/* Detailed Tables */}
           {selectedCard === 'turnover' && (
             <Card title="Turnover Details" className="shadow-sm">
-              <Table 
-                dataSource={Array.from({ length: 12 }, (_, i) => {
-                  const month = new Date();
-                  month.setMonth(month.getMonth() + i);
-                  const monthName = month.toLocaleString('en-US', { month: 'long' });
-                  const year = month.getFullYear();
-                  
-                  const monthOrders = allOrders.filter(order => {
-                    const orderDate = new Date(order.createdAt || order.date);
-                    return orderDate.getMonth() === month.getMonth() && 
-                           orderDate.getFullYear() === year &&
-                           order.status === 'delivered';
-                  });
-                  
-                  const turnover = monthOrders.reduce((sum, order) => 
-                    sum + (Number(order.total) || 0), 0);
-                  
-                  return {
-                    key: i,
-                    month: monthName,
-                    year: year,
-                    turnover: turnover,
-                    orderCount: monthOrders.length
-                  };
-                }).filter(item => item.orderCount > 0)}
-                columns={[
-                  {
-                    title: 'Month',
-                    dataIndex: 'month',
-                    key: 'month',
-                  },
-                  {
-                    title: 'Year',
-                    dataIndex: 'year',
-                    key: 'year',
-                  },
-                  {
-                    title: 'Turnover',
-                    dataIndex: 'turnover',
-                    key: 'turnover',
-                    render: (turnover) => `${turnover.toLocaleString('vi-VN')}₫`,
-                  },
-                  {
-                    title: 'Order Count',
-                    dataIndex: 'orderCount',
-                    key: 'orderCount',
-                  }
-                ]}
-                pagination={false}
-              />
+              <div style={{ width: '80%', margin: '0 auto' }}>
+                <Column
+                  data={Array.from({ length: 12 }, (_, i) => {
+                    const month = new Date();
+                    month.setMonth(month.getMonth() + i);
+                    const monthName = month.toLocaleString('en-US', { month: 'long' });
+                    const year = month.getFullYear();
+                    
+                    const monthOrders = allOrders.filter(order => {
+                      const orderDate = new Date(order.createdAt || order.date);
+                      return orderDate.getMonth() === month.getMonth() && 
+                             orderDate.getFullYear() === year &&
+                             order.status === 'delivered';
+                    });
+                    
+                    const turnover = monthOrders.reduce((sum, order) => 
+                      sum + (Number(order.total) || 0), 0);
+                    
+                    return {
+                      month: `${monthName} ${year}`,
+                      turnover: turnover,
+                      orderCount: monthOrders.length
+                    };
+                  }).filter(item => item.orderCount > 0)}
+                  xField="month"
+                  yField="turnover"
+                  label={{
+                    position: 'middle',
+                    style: {
+                      fill: '#FFFFFF',
+                      opacity: 0.6,
+                    },
+                  }}
+                  meta={{
+                    turnover: {
+                      alias: 'Turnover (VNĐ)',
+                    },
+                  }}
+                  color="#1890ff"
+                  height={400}
+                  autoFit={true}
+                  columnWidth={20}
+                />
+              </div>
             </Card>
           )}
 
           {selectedCard === 'profit' && (
             <Card title="Profit Details" className="shadow-sm">
-              <Table 
-                dataSource={Array.from({ length: 12 }, (_, i) => {
-                  const month = new Date();
-                  month.setMonth(month.getMonth() + i);
-                  const monthName = month.toLocaleString('en-US', { month: 'long' });
-                  const year = month.getFullYear();
-                  
-                  const monthOrders = allOrders.filter(order => {
-                    const orderDate = new Date(order.createdAt || order.date);
-                    return orderDate.getMonth() === month.getMonth() && 
-                           orderDate.getFullYear() === year &&
-                           order.status === 'delivered';
-                  });
-                  
-                  const turnover = monthOrders.reduce((sum, order) => 
-                    sum + (Number(order.total) || 0), 0);
-                  
-                  const profit = Math.round(turnover * 0.3);
-                  
-                  return {
-                    key: i,
-                    month: monthName,
-                    year: year,
-                    turnover: turnover,
-                    profit: profit,
-                    orderCount: monthOrders.length
-                  };
-                }).filter(item => item.orderCount > 0)}
-                columns={[
-                  {
-                    title: 'Month',
-                    dataIndex: 'month',
-                    key: 'month',
-                  },
-                  {
-                    title: 'Year',
-                    dataIndex: 'year',
-                    key: 'year',
-                  },
-                  {
-                    title: 'Turnover',
-                    dataIndex: 'turnover',
-                    key: 'turnover',
-                    render: (turnover) => `${turnover.toLocaleString('vi-VN')}₫`,
-                  },
-                  {
-                    title: 'Profit (30%)',
-                    dataIndex: 'profit',
-                    key: 'profit',
-                    render: (profit) => `${profit.toLocaleString('vi-VN')}₫`,
-                  },
-                  {
-                    title: 'Order Count',
-                    dataIndex: 'orderCount',
-                    key: 'orderCount',
-                  }
-                ]}
-                pagination={false}
-              />
+              <div style={{ width: '80%', margin: '0 auto' }}>
+                <Column
+                  data={Array.from({ length: 12 }, (_, i) => {
+                    const month = new Date();
+                    month.setMonth(month.getMonth() + i);
+                    const monthName = month.toLocaleString('en-US', { month: 'long' });
+                    const year = month.getFullYear();
+                    
+                    const monthOrders = allOrders.filter(order => {
+                      const orderDate = new Date(order.createdAt || order.date);
+                      return orderDate.getMonth() === month.getMonth() && 
+                             orderDate.getFullYear() === year &&
+                             order.status === 'delivered';
+                    });
+                    
+                    const turnover = monthOrders.reduce((sum, order) => 
+                      sum + (Number(order.total) || 0), 0);
+                    
+                    const profit = Math.round(turnover * 0.3);
+                    
+                    return {
+                      month: `${monthName} ${year}`,
+                      profit: profit,
+                      orderCount: monthOrders.length
+                    };
+                  }).filter(item => item.orderCount > 0)}
+                  xField="month"
+                  yField="profit"
+                  label={{
+                    position: 'middle',
+                    style: {
+                      fill: '#FFFFFF',
+                      opacity: 0.6,
+                    },
+                  }}
+                  meta={{
+                    profit: {
+                      alias: 'Profit (VNĐ)',
+                    },
+                  }}
+                  color="#52c41a"
+                  height={400}
+                  autoFit={true}
+                  columnWidth={20}
+                />
+              </div>
             </Card>
           )}
 
