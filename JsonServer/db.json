@@ -514,7 +514,7 @@
     },
     {
       "code": "30THANG4",
-      "type": "percentage",
+      "type": "fixed",
       "discount": 10,
       "minOrder": 500000,
       "startDate": "2025-04-30",
@@ -953,6 +953,30 @@
           "note": "Status changed to pending"
         }
       ]
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 8,
+          "id": 5
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-05T14:57:39.339Z",
+      "id": 12
     }
   ],
   "comments": [

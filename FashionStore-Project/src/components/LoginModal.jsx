@@ -427,6 +427,11 @@ const LoginModal = ({ onClose, onLogin }) => {
               className="w-full p-3 my-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               required
             />
+            <div className="w-full text-right">
+              <a href="#" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                Quên mật khẩu?
+              </a>
+            </div>
             <button
               type="submit"
               className="rounded-full border border-gray-700 bg-gray-700 text-white text-xs font-medium py-3 px-11 my-3 uppercase tracking-wider transition-all duration-300 hover:bg-gray-800 active:scale-95 focus:outline-none hover:cursor-pointer"
