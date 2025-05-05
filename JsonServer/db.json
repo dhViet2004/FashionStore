@@ -131,8 +131,7 @@
       "address": "Not provided",
       "birthday": "Not provided",
       "phoneNumber": "Not provided",
-      "id": 13,
-      "favourite": []
+      "id": 13
     }
   ],
   "products": [
@@ -467,49 +466,19 @@
       "id": 3
     },
     {
-      "productId": 2,
-      "name": "Slim Fit Jeans",
-      "price": 300000,
+      "productId": 3,
+      "name": "Leather Jacket",
+      "price": 290000,
       "quantity": 1,
       "size": "M",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
-      "stock": 74,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "stock": 29,
       "sizes": {
         "size": "M",
-        "stock": 73
+        "stock": 28
       },
-      "userId": 13,
+      "userId": 1,
       "id": 4
-    },
-    {
-      "productId": 4,
-      "name": "Running Shoes",
-      "price": 178000,
-      "quantity": 1,
-      "size": "M",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Den_f78pam.jpg",
-      "stock": 50,
-      "sizes": {
-        "size": "M",
-        "stock": 49
-      },
-      "userId": 13,
-      "id": 5
-    },
-    {
-      "productId": 5,
-      "name": "Wool Sweater",
-      "price": 180000,
-      "quantity": 1,
-      "size": "M",
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayTayDai-Tim_ghbhqe.jpg",
-      "stock": 40,
-      "sizes": {
-        "size": "M",
-        "stock": 39
-      },
-      "userId": 13,
-      "id": 6
     }
   ],
   "vouchers": [
@@ -984,144 +953,6 @@
           "note": "Status changed to pending"
         }
       ]
-    },
-    {
-      "userId": 13,
-      "items": [
-        {
-          "productId": 2,
-          "name": "Slim Fit Jeans",
-          "price": 300000,
-          "quantity": 5,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
-          "stock": 15,
-          "sizes": {
-            "size": "M",
-            "stock": 14
-          },
-          "userId": 13,
-          "id": 4
-        },
-        {
-          "productId": 2,
-          "name": "Slim Fit Jeans",
-          "price": 300000,
-          "quantity": 1,
-          "size": "XL",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
-          "stock": 12,
-          "sizes": {
-            "size": "XL",
-            "stock": 11
-          },
-          "userId": 13,
-          "id": 5
-        }
-      ],
-      "total": 1830000,
-      "voucher": null,
-      "createdAt": "2025-05-05T10:45:49.276Z",
-      "id": 12
-    },
-    {
-      "userId": 13,
-      "items": [
-        {
-          "productId": 2,
-          "name": "Slim Fit Jeans",
-          "price": 300000,
-          "quantity": 2,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
-          "stock": 74,
-          "sizes": {
-            "size": "M",
-            "stock": 73
-          },
-          "userId": 13,
-          "id": 4
-        },
-        {
-          "productId": 3,
-          "name": "Leather Jacket",
-          "price": 290000,
-          "quantity": 2,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
-          "stock": 29,
-          "sizes": {
-            "size": "M",
-            "stock": 28
-          },
-          "userId": 13,
-          "id": 5
-        },
-        {
-          "productId": 12,
-          "name": "Đầm QC phối linen tầng",
-          "price": 190000,
-          "quantity": 1,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-          "stock": 10,
-          "sizes": {
-            "size": "M",
-            "stock": 9
-          },
-          "userId": 13,
-          "id": 6
-        },
-        {
-          "productId": 7,
-          "name": "Đầm QC phối linen tầng",
-          "price": 350000,
-          "quantity": 1,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
-          "stock": 30,
-          "sizes": {
-            "size": "M",
-            "stock": 29
-          },
-          "userId": 13,
-          "id": 7
-        },
-        {
-          "productId": 6,
-          "name": "Đầm QC phối linen tầng",
-          "price": 299000,
-          "quantity": 1,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
-          "stock": 12,
-          "sizes": {
-            "size": "M",
-            "stock": 11
-          },
-          "userId": 13,
-          "id": 8
-        },
-        {
-          "productId": 4,
-          "name": "Running Shoes",
-          "price": 178000,
-          "quantity": 1,
-          "size": "M",
-          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Den_f78pam.jpg",
-          "stock": 50,
-          "sizes": {
-            "size": "M",
-            "stock": 49
-          },
-          "userId": 13,
-          "id": 9
-        }
-      ],
-      "total": 2227000,
-      "voucher": null,
-      "createdAt": "2025-05-05T11:53:34.906Z",
-      "id": 13
     }
   ],
   "comments": [
@@ -1236,15 +1067,6 @@
       "comment": "Đầm xinh, mặc đi làm hay đi chơi đều được. Đóng gói cẩn thận.",
       "rating": 5,
       "date": "2025-04-27"
-    },
-    {
-      "productId": 2,
-      "user": "tranthanhtai1928",
-      "comment": "chee",
-      "rating": 1,
-      "date": "2025-05-05",
-      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIWgOzNT_-9CAEOgo0v6ruw5cVepVQ073sW5MuOmLF2thguc7uW=s96-c",
-      "id": 15
     }
   ]
 }

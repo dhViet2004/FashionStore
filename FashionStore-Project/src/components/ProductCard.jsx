@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'; // Sử dụng useNavigate thay 
 import { useNotify } from '../context/notifyContext';
 import { useCart } from '../context/CartContext';
 import { useEffect, useState } from 'react';
+import { Button, Tooltip, message } from 'antd';
+import { ShoppingCartOutlined, CreditCardOutlined } from '@ant-design/icons';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -13,7 +15,7 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-const ProductCard = ({ product, onAddToCart, onPayNow }) => {
+const ProductCard = ({ product, onPayNow }) => {
   const { addToCart } = useCart();
   const { showNotification } = useNotify();
   const navigate = useNavigate(); // Hook để điều hướng đến trang chi tiết sản phẩm
@@ -33,7 +35,7 @@ const ProductCard = ({ product, onAddToCart, onPayNow }) => {
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
-      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      message.error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
       localStorage.setItem('redirectAfterLogin', window.location.pathname);
       navigate('/login');
       return;
@@ -77,7 +79,7 @@ const ProductCard = ({ product, onAddToCart, onPayNow }) => {
   const handleToggleFavorite = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
-      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích');
+      message.error('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích');
       localStorage.setItem('redirectAfterLogin', window.location.pathname);
       navigate('/login');
       return;
@@ -145,7 +147,7 @@ const ProductCard = ({ product, onAddToCart, onPayNow }) => {
         <img
           src={product.imageUrl}
           alt={product.name}
-          className="w-full h-48 object-cover"
+          className="w-full h-72 object-cover"
         />
         {product.stock < 10 && (
           <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
@@ -180,19 +182,33 @@ const ProductCard = ({ product, onAddToCart, onPayNow }) => {
             Stock: {product.stock}
           </span>
         </div>
-        <div className="flex space-x-4 justify-cente">
-          <button
-            className="hover:cursor-pointer flex justify-center items-center w-1/2 p-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200"
-            onClick={() => handleAddToCart(product)}
-          >
-            <FaShoppingCart className="mr-2" />
-          </button>
-          <button
-            className="hover:cursor-pointer flex justify-center items-center w-1/2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-200"
-            onClick={() => onPayNow(product)}
-          >
-            <FaCreditCard className="mr-2" />
-          </button>
+        <div className="flex space-x-2 justify-center mt-4">
+          <Tooltip title="Thêm vào giỏ hàng">
+            <Button
+              type="default"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToCart(product);
+              }}
+              className="flex items-center justify-center w-1/2 h-10 bg-white text-blue-600 border border-blue-600 rounded-lg transition-all duration-300 hover:bg-blue-50 hover:scale-105"
+            >
+              <ShoppingCartOutlined className="text-lg mr-2" />
+              <span className="text-sm font-medium">Giỏ hàng</span>
+            </Button>
+          </Tooltip>
+          <Tooltip title="Thanh toán nhanh">
+            <Button
+              type="primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPayNow(product);
+              }}
+              className="flex items-center justify-center w-1/2 h-10 bg-gradient-to-r from-blue-600 via-indigo-700 to-indigo-800 hover:from-blue-700 hover:via-indigo-800 hover:to-indigo-900 text-white border-none rounded-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
+            >
+              <CreditCardOutlined className="text-lg mr-2" />
+              <span className="text-sm font-medium">Mua ngay</span>
+            </Button>
+          </Tooltip>
         </div>
       </div>
     </div>
