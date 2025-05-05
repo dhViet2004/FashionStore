@@ -13,6 +13,7 @@ import LoginModal from './components/LoginModal';
 import Checkout from './components/Checkout';
 import ZaloChat from './components/ZaloChat';
 import AIChatBox from './components/AIChatBox';
+import Favourite from './pages/favorites/Favourite';
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/cart" element={<Cart />} />
             <Route path="/login" element={<LoginModal onClose={() => window.history.back()} onLogin={() => window.location.reload()} />} />
             <Route path="/checkout" element={<Checkout />} />
+            <Route path="/favorites" element={<Favourite />} />
           </Routes>
         </main>
         <Footer />

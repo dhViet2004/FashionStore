@@ -1,5 +1,8 @@
-import { FaStar, FaRegStar } from 'react-icons/fa';
-import { useNavigate } from 'react-router-dom';  // Sử dụng useNavigate thay vì history.push
+import { FaStar, FaRegStar, FaShoppingCart, FaCreditCard, FaHeart } from 'react-icons/fa'; // Import thêm icon
+import { useNavigate } from 'react-router-dom'; // Sử dụng useNavigate thay vì history.push
+import { useNotify } from '../context/notifyContext';
+import { useCart } from '../context/CartContext';
+import { useEffect, useState } from 'react';
 
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', {
@@ -10,8 +13,108 @@ const formatCurrency = (amount) => {
   }).format(amount);
 };
 
-const ProductCard = ({ product }) => {
-  const navigate = useNavigate();  // Hook để điều hướng đến trang chi tiết sản phẩm
+const ProductCard = ({ product, onAddToCart, onPayNow }) => {
+  const { addToCart } = useCart();
+  const { showNotification } = useNotify();
+  const navigate = useNavigate(); // Hook để điều hướng đến trang chi tiết sản phẩm
+  const [isFavorite, setIsFavorite] = useState(false); // Trạng thái yêu thích
+
+  useEffect(() => {
+    // Kiểm tra xem sản phẩm có nằm trong danh sách yêu thích không
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user && user.favourite) {
+      const isFav = user.favourite.some((item) => item.id === product.id);
+      setIsFavorite(isFav);
+    }
+  }, [product.id]);
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    const cartItem = {
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: 1,
+      size: "M",
+      imageUrl: product.imageUrl,
+      stock: product.stock,
+      sizes: {
+        size: "M",
+        stock: product.stock - 1,
+      }
+    };
+
+    const success = await addToCart(cartItem);
+    if (success) {
+      showNotification(
+        <div className="flex items-center">
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-8 h-8 rounded mr-2 object-cover"
+          />
+          <div>
+            <p className="font-medium">Đã thêm vào giỏ hàng</p>
+            <p className="text-sm">
+              {product.name} (Size: M)
+            </p>
+          </div>
+        </div>,
+        'success'
+      );
+    }
+  };
+
+  const handleToggleFavorite = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    const updatedFavorites = user.favourite || [];
+    const isFav = updatedFavorites.some((item) => item.id === product.id);
+
+    if (isFav) {
+      // Nếu sản phẩm đã có trong danh sách yêu thích, xóa nó
+      const newFavorites = updatedFavorites.filter((item) => item.id !== product.id);
+      user.favourite = newFavorites;
+      setIsFavorite(false);
+      showNotification(
+        <div className="flex items-center">
+          <FaHeart className="text-gray-400 mr-2" />
+          <p className="font-medium">{product.name} đã được xóa khỏi danh sách yêu thích!</p>
+        </div>,
+        'info'
+      );
+    } else {
+      // Nếu sản phẩm chưa có trong danh sách yêu thích, thêm nó
+      updatedFavorites.push(product);
+      user.favourite = updatedFavorites;
+      setIsFavorite(true);
+      showNotification(
+        <div className="flex items-center">
+          <FaHeart className="text-pink-500 mr-2" />
+          <p className="font-medium">{product.name} đã được thêm vào danh sách yêu thích!</p>
+        </div>,
+        'success'
+      );
+    }
+
+    // Cập nhật localStorage
+    localStorage.setItem('user', JSON.stringify(user));
+  };
 
   const renderStars = (rating) => {
     const stars = [];
@@ -30,17 +133,15 @@ const ProductCard = ({ product }) => {
     return stars;
   };
 
-  // Handle click vào sản phẩm
   const handleProductClick = () => {
-    navigate(`/products/${product.id}`);  // Điều hướng tới trang chi tiết sản phẩm
+    navigate(`/products/${product.id}`); // Điều hướng tới trang chi tiết sản phẩm
   };
 
   return (
     <div
-      className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:translate-y-2 cursor-pointer"
-      onClick={handleProductClick}  // Khi click vào sản phẩm, sẽ mở trang chi tiết
+      className="relative bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:scale-105 hover:translate-y-2 cursor-pointer"
     >
-      <div className="relative">
+      <div className="relative" onClick={handleProductClick}>
         <img
           src={product.imageUrl}
           alt={product.name}
@@ -52,21 +153,46 @@ const ProductCard = ({ product }) => {
           </span>
         )}
       </div>
-      <div className="p-4">
+      <div className="p-4 h-66 flex flex-col justify-between">
         <h3 className="text-lg font-semibold text-gray-800 mb-2">{product.name}</h3>
         <p className="text-blue-600 font-bold mb-2">{formatCurrency(product.price)}</p>
+        <span
+          className={`absolute right-2 top-2 text-2xl cursor-pointer ${
+            isFavorite ? 'text-pink-500' : 'text-gray-400'
+          }`}
+          onClick={(e) => {
+            e.stopPropagation(); // Ngăn chặn sự kiện click vào sản phẩm
+            handleToggleFavorite(); // Gọi hàm toggle yêu thích
+          }}
+        >
+          <FaHeart />
+        </span>
         <p className="text-sm text-gray-600 mb-2">{product.description}</p>
         <div className="flex items-center mb-2">
           <div className="flex mr-2">{renderStars(product.rating)}</div>
           <span className="text-sm text-gray-500">({product.reviews} reviews)</span>
         </div>
-        <div className="flex justify-between items-center text-sm">
+        <div className="flex justify-between items-center text-sm mb-4">
           <span className="text-gray-600">Category: {product.category}</span>
           <span
             className={`font-medium ${product.stock > 10 ? 'text-green-600' : 'text-red-600'}`}
           >
             Stock: {product.stock}
           </span>
+        </div>
+        <div className="flex space-x-4 justify-cente">
+          <button
+            className="hover:cursor-pointer flex justify-center items-center w-1/2 p-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200"
+            onClick={() => handleAddToCart(product)}
+          >
+            <FaShoppingCart className="mr-2" />
+          </button>
+          <button
+            className="hover:cursor-pointer flex justify-center items-center w-1/2 p-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-200"
+            onClick={() => onPayNow(product)}
+          >
+            <FaCreditCard className="mr-2" />
+          </button>
         </div>
       </div>
     </div>
