@@ -8,9 +8,9 @@
       "role": "admin",
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
       "dateCreate": "2023-01-15T10:20:30Z",
-      "address": "123 Main St, New York, NY",
+      "address": "Bến Tre",
       "birthday": "1990-05-20",
-      "phoneNumber": "123-456-7890",
+      "phoneNumber": "0364601530",
       "addresses": [
         {
           "province": "Hà Nội",
@@ -24,7 +24,9 @@
           "address": "456 Đường XYZ",
           "isDefault": false
         }
-      ]
+      ],
+      "full_name": "Hoàng Việt",
+      "email": "dviet037@gmail.com"
     },
     {
       "username": "user01",
@@ -57,9 +59,9 @@
       "google_id": "115058230448698672084",
       "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocKqq_DKVbDPGvtpAEvUDAfdEhWIJsztxwCGx8hdOwyA_y_L-Lw=s96-c",
       "dateCreate": "2025-04-27T11:40:00.564Z",
-      "address": "Not provided",
-      "birthday": "Not provided",
-      "phoneNumber": "Not provided",
+      "address": "Bến Tre",
+      "birthday": "2004-12-16",
+      "phoneNumber": "0364601530",
       "id": 8
     },
     {
@@ -142,8 +144,6 @@
       "reviews": 85,
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
       "description": "Modern slim fit jeans with a comfortable stretch for all-day wear.",
-      "detailDescription": "Chiếc quần Slim Fit Jeans hiện đại với chất liệu co giãn mang lại cảm giác thoải mái cả ngày. Thiết kế ôm gọn, thích hợp cho phong cách năng động và lịch sự.",
-      "id": 2,
       "sizes": [
         {
           "size": "S",
@@ -171,9 +171,10 @@
         },
         {
           "size": "XXXXL",
-          "stock": 2
+          "stock": 3
         }
-      ]
+      ],
+      "id": 2
     },
     {
       "name": "Leather Jacket",
@@ -408,6 +409,48 @@
           "stock": 2
         }
       ]
+    },
+    {
+      "name": "Váy Hỡ Vai",
+      "category": "Shoes",
+      "price": 299000,
+      "reviews": 0,
+      "rating": 5,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "description": "váy hỡ vai xinh ơi là xinh",
+      "sizes": [
+        {
+          "size": "S",
+          "stock": 11
+        },
+        {
+          "size": "M",
+          "stock": 12
+        }
+      ],
+      "stock": 23,
+      "id": 13
+    },
+    {
+      "name": "Đầm QC phối linen tầng Xám",
+      "category": "Dresses",
+      "price": 399999,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Xam_sh0xst.jpg",
+      "description": "đầm xinh ơi là xinh",
+      "sizes": [
+        {
+          "size": "S",
+          "stock": 30
+        },
+        {
+          "size": "M",
+          "stock": 12
+        }
+      ],
+      "stock": 42,
+      "rating": 0,
+      "reviews": 0,
+      "id": 14
     }
   ],
   "cart": [
