@@ -600,76 +600,80 @@ const Admin = () => {
   );
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div 
-          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'overview' ? 'ring-1 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('overview')}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-50 rounded-full p-2">
-              <DashboardOutlined className="text-blue-500 text-lg" />
+    <div className="min-h-screen flex flex-col">
+      <div className="flex-grow">
+        <div className="container mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div 
+              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'overview' ? 'ring-1 ring-blue-500' : ''}`}
+              onClick={() => handleSectionClick('overview')}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-50 rounded-full p-2">
+                  <DashboardOutlined className="text-blue-500 text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-800">Overview</h2>
+                  <p className="text-sm text-gray-500">Dashboard</p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-800">Overview</h2>
-              <p className="text-sm text-gray-500">Dashboard</p>
+
+            <div 
+              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'products' ? 'ring-1 ring-blue-500' : ''}`}
+              onClick={() => handleSectionClick('products')}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-50 rounded-full p-2">
+                  <FaBox className="text-blue-500 text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-800">Products</h2>
+                  <p className="text-sm text-gray-500">Manage products</p>
+                </div>
+              </div>
+            </div>
+
+            <div 
+              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'orders' ? 'ring-1 ring-blue-500' : ''}`}
+              onClick={() => handleSectionClick('orders')}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-purple-50 rounded-full p-2">
+                  <FaClipboardList className="text-purple-500 text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-800">Orders</h2>
+                  <p className="text-sm text-gray-500">Manage orders</p>
+                </div>
+              </div>
+            </div>
+
+            <div 
+              className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'users' ? 'ring-1 ring-blue-500' : ''}`}
+              onClick={() => handleSectionClick('users')}
+            >
+              <div className="flex items-center space-x-3">
+                <div className="bg-red-50 rounded-full p-2">
+                  <FaUsers className="text-red-500 text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-gray-800">Users</h2>
+                  <p className="text-sm text-gray-500">Manage users</p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div 
-          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'products' ? 'ring-1 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('products')}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-50 rounded-full p-2">
-              <FaBox className="text-blue-500 text-lg" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-800">Products</h2>
-              <p className="text-sm text-gray-500">Manage products</p>
-            </div>
+          {/* Active Section Content */}
+          <div className="mt-6 mb-24">
+            {renderActiveSection()}
           </div>
         </div>
-
-        <div 
-          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'orders' ? 'ring-1 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('orders')}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-purple-50 rounded-full p-2">
-              <FaClipboardList className="text-purple-500 text-lg" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-800">Orders</h2>
-              <p className="text-sm text-gray-500">Manage orders</p>
-            </div>
-          </div>
-        </div>
-
-        <div 
-          className={`bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer ${activeSection === 'users' ? 'ring-1 ring-blue-500' : ''}`}
-          onClick={() => handleSectionClick('users')}
-        >
-          <div className="flex items-center space-x-3">
-            <div className="bg-red-50 rounded-full p-2">
-              <FaUsers className="text-red-500 text-lg" />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold text-gray-800">Users</h2>
-              <p className="text-sm text-gray-500">Manage users</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Active Section Content */}
-      <div className="mt-6">
-        {renderActiveSection()}
       </div>
 
       <Modal
