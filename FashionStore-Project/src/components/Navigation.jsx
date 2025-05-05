@@ -110,7 +110,10 @@ const Navigation = () => {
                 onChange={handleSearchChange}
                 className="w-48 sm:w-64 px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               />
-              <FaSearch className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500" />
+              <FaSearch 
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 hover:cursor-pointer" 
+                onClick={() => navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`)}
+                />
             </div>
           </div>
 

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { CartProvider } from './context/CartContext'
+import { NotifyProvider } from './context/NotifyContext.jsx'
 
 import './index.css'
 import App from './App.jsx'
@@ -10,7 +11,9 @@ createRoot(document.getElementById('root')).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={clientId}>
       <CartProvider>
-        <App />
+        <NotifyProvider>
+          <App />
+        </NotifyProvider>
       </CartProvider>
     </GoogleOAuthProvider>
   </StrictMode>,

@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaRegStar } from 'react-icons/fa';
+import { FaStar, FaRegStar, FaUserCircle } from 'react-icons/fa'; // Import icon mặc định
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
+import { useNotify } from '../context/notifyContext';
+import ProductCard from './ProductCard'; // Make sure this path is correct
+import useComment from "../hooks/useComment"; // Import hook useComment
 
 const DetailProduct = () => {
   const { productId } = useParams();
@@ -13,6 +16,11 @@ const DetailProduct = () => {
   const [error, setError] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [size, setSize] = useState('M');
+  const [relatedProducts, setRelatedProducts] = useState([]);
+  const { showNotification } = useNotify();
+  const { comments, isSubmitting, fetchComments, addComment } = useComment();
+  const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(5);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -32,6 +40,29 @@ const DetailProduct = () => {
     fetchProductDetails();
   }, [productId]);
 
+  useEffect(() => {
+    const fetchRelatedProducts = async () => {
+      try {
+        // Fetch 5 products excluding the current one
+        const response = await fetch(`http://localhost:3001/products?_limit=5`);
+        const data = await response.json();
+        setRelatedProducts(data.filter(p => p.id !== product.id));
+      } catch (error) {
+        console.error('Error fetching related products:', error);
+      }
+    };
+    
+    if (product) {
+      fetchRelatedProducts();
+    }
+  }, [product, productId]);
+
+  useEffect(() => {
+    if (product) {
+      fetchComments(product.id); // Fetch comments for the current product
+    }
+  }, [product]);
+
   const handleAddToCart = async () => {
     if (!product) return;
 
@@ -43,6 +74,12 @@ const DetailProduct = () => {
       return;
     }
 
+    const selectedSize = product.sizes.find(sizeOption => sizeOption.size === size);
+    if (!selectedSize || quantity > selectedSize.stock) {
+      showNotification(`Số lượng vượt quá tồn kho (Còn ${selectedSize?.stock || 0} sản phẩm)`, 'warning');
+      return;
+    }
+
     const cartItem = {
       productId: product.id,
       name: product.name,
@@ -50,15 +87,31 @@ const DetailProduct = () => {
       quantity: quantity,
       size: size,
       imageUrl: product.imageUrl,
-      stock: product.stock
+      stock: selectedSize.stock,
+      sizes: {
+        size: selectedSize.size,
+        stock: selectedSize.stock - quantity,
+      }
     };
 
     const success = await addToCart(cartItem);
     if (success) {
-      setProduct(prev => ({
-        ...prev,
-        stock: prev.stock - quantity
-      }));
+      showNotification(
+        <div className="flex items-center">
+          <img 
+            src={product.imageUrl} 
+            alt={product.name} 
+            className="w-8 h-8 rounded mr-2 object-cover"
+          />
+          <div>
+            <p className="font-medium">Đã thêm vào giỏ hàng</p>
+            <p className="text-sm">
+              {product.name} (Size: {size}) × {quantity}
+            </p>
+          </div>
+        </div>,
+        'success'
+      );
     }
   };
 
@@ -67,6 +120,53 @@ const DetailProduct = () => {
     if (success) {
       navigate('/cart');
     }
+  };
+
+  const handleCommentSubmit = async () => {
+    if (!newComment.trim()) {
+      alert("Vui lòng nhập nội dung bình luận!");
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (!user) {
+      alert("Vui lòng đăng nhập để gửi bình luận!");
+      return;
+    }
+
+    const commentData = {
+      productId: product.id,
+      user: user.username || "Anonymous",
+      comment: newComment,
+      rating: newRating,
+      date: new Date().toISOString().split("T")[0],
+    };
+
+    const success = await addComment(commentData);
+    if (success) {
+      setNewComment(""); // Reset nội dung bình luận
+      setNewRating(5); // Reset đánh giá sao
+      alert("Gửi bình luận thành công!");
+    } else {
+      alert("Gửi bình luận thất bại. Vui lòng thử lại!");
+    }
+  };
+
+  const renderStars = (rating) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 !== 0;
+
+    for (let i = 0; i < 5; i++) {
+      if (i < fullStars) {
+        stars.push(<FaStar key={i} className="text-yellow-400" />);
+      } else if (i === fullStars && hasHalfStar) {
+        stars.push(<FaStar key={i} className="text-yellow-400" />);
+      } else {
+        stars.push(<FaRegStar key={i} className="text-yellow-400" />);
+      }
+    }
+    return stars;
   };
 
   if (loading) {
@@ -93,35 +193,17 @@ const DetailProduct = () => {
     );
   }
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < 5; i++) {
-      if (i < fullStars) {
-        stars.push(<FaStar key={i} className="text-yellow-400" />);
-      } else if (i === fullStars && hasHalfStar) {
-        stars.push(<FaStar key={i} className="text-yellow-400" />);
-      } else {
-        stars.push(<FaRegStar key={i} className="text-yellow-400" />);
-      }
-    }
-    return stars;
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-4">
-        <button
-          onClick={() => navigate(-1)}
-          className="px-6 py-3 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-200"
-        >
-          Trở về
-        </button>
-      </div>
-
+      {/* Nút trở về */}
+      <span 
+        onClick={() => navigate(-1)} 
+        className="absolute left-27 top-20 text-2xl mb-4 text-gray-600 cursor-pointer pl-3 pr-4 rounded hover:bg-gray-200 select-none"
+      >
+        &lt; 
+      </span>
       <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg shadow-lg mb-8">
+        
         <div className="md:w-1/4 mb-6 md:mb-0">
           <img
             src={product.imageUrl}
@@ -132,7 +214,7 @@ const DetailProduct = () => {
 
         <div className="md:w-1/2 ml-0 md:ml-12">
           <h2 className="text-3xl font-semibold text-gray-800">{product.name}</h2>
-          <span className='text-gray-600'>{product.description}</span>
+          <span className="text-gray-600">{product.description}</span>
 
           <div className="flex flex-col mb-2">
             <div className="flex items-center">
@@ -149,14 +231,15 @@ const DetailProduct = () => {
           <div className="flex items-center mb-4">
             <span className="text-gray-600">Size: </span>
             <select 
-              className="ml-11 border border-gray-300 rounded-md p-2"
+              className="ml-11 border border-gray-300 rounded-md p-2 hover:cursor-pointer"
               value={size}
               onChange={(e) => setSize(e.target.value)}
             >
-              <option value="S">S</option>
-              <option value="M">M</option>
-              <option value="L">L</option>
-              <option value="XL">XL</option>
+              {product.sizes.map((sizeOption, index) => (
+                <option key={index} value={sizeOption.size}>
+                  {sizeOption.size}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -164,43 +247,57 @@ const DetailProduct = () => {
             <span>Số lượng: </span>
             <div className="ml-2">
               <button
-                className='border p-2 border-gray-300'
+                className="border p-2 border-gray-300 hover:cursor-pointer"
                 onClick={() => {
-                  if (quantity > 1)
-                    setQuantity(quantity - 1)
+                  if (quantity > 1) setQuantity(quantity - 1);
                 }}
-              >-</button>
+              >
+                -
+              </button>
               <input
                 type="number"
                 min="1"
-                max={product.stock}
+                max={product.sizes.find(sizeOption => sizeOption.size === size)?.stock}
                 className="w-12 p-2 border border-gray-300"
                 value={quantity}
                 onChange={(e) => {
-                  const value = Math.min(Math.max(1, Number(e.target.value)), product.stock);
+                  const value = Math.min(
+                    Math.max(1, Number(e.target.value)),
+                    product.sizes.find(sizeOption => sizeOption.size === size)?.stock
+                  );
                   setQuantity(value);
                 }}
               />
               <button
-                className='border p-2 border-gray-300'
+                className="border p-2 border-gray-300 hover:cursor-pointer"
                 onClick={() => {
-                  if (quantity < product.stock)
-                    setQuantity(quantity + 1)
+                  if (quantity < product.sizes.find(sizeOption => sizeOption.size === size)?.stock)
+                    setQuantity(quantity + 1);
                 }}
-              >+</button>
+              >
+                +
+              </button>
             </div>
-            <span className='text-gray-600 ml-2 text-sm'>({product.stock} in stock)</span>
+            <span
+              className={`${
+                product.sizes.find(sizeOption => sizeOption.size === size)?.stock <= 10
+                  ? "text-red-600"
+                  : "text-gray-600"
+              } ml-2 text-sm`}
+            >
+              ({product.sizes.find(sizeOption => sizeOption.size === size)?.stock} in stock)
+            </span>
           </div>
 
           <div className="flex space-x-4">
             <button 
-              className="w-full md:w-1/2 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200"
+              className="w-full md:w-1/2 px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200 hover:cursor-pointer"
               onClick={handleAddToCart}
             >
               Thêm vào giỏ hàng
             </button>
             <button 
-              className="w-full md:w-1/2 px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-200"
+              className="w-full md:w-1/2 px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 transition duration-200 hover:cursor-pointer"
               onClick={handleBuyNow}
             >
               Mua ngay
@@ -208,6 +305,98 @@ const DetailProduct = () => {
           </div>
         </div>
       </div>
+
+      {/* Thêm phần detailDescription */}
+      <div className="bg-gray-100 p-6 rounded-lg shadow-lg mb-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Chi tiết sản phẩm</h3>
+        <p className="text-gray-600">{product.detailDescription}</p>
+      </div>
+
+      {/* Phần hiển thị bình luận */}
+      <div className="bg-gray-100 p-6 rounded-lg shadow-lg mt-8">
+        <h3 className="text-xl font-semibold text-gray-800 mb-4">Đánh giá sản phẩm</h3>
+        {comments.length > 0 ? (
+          comments.map((comment, index) => (
+            <div key={index} className="flex items-start mb-6">
+              {/* Avatar người dùng */}
+              {comment.avatar ? (
+                <img
+                  src={comment.avatar}
+                  alt={comment.user}
+                  className="w-12 h-12 rounded-full mr-4 object-cover"
+                />
+              ) : (
+                <FaUserCircle className="text-4xl text-gray-400 mr-4" />
+              )}
+
+              {/* Nội dung bình luận */}
+              <div>
+                <div className="flex items-center mb-1">
+                  <span className="font-semibold text-gray-800">{comment.user}</span>
+                  <span className="ml-2 text-sm text-gray-500">{comment.date}</span>
+                </div>
+                <p className="text-gray-600">{comment.comment}</p>
+                <div className="flex items-center mt-2">
+                  {Array.from({ length: 5 }, (_, i) => (
+                    <span key={i} className={i < comment.rating ? "text-yellow-400" : "text-gray-300"}>
+                      ★
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-600">Chưa có đánh giá nào cho sản phẩm này.</p>
+        )}
+
+        {/* Form gửi bình luận */}
+        <div className="mt-6">
+          <h4 className="text-lg font-semibold text-gray-800 mb-2">Viết đánh giá của bạn</h4>
+          <textarea
+            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+            rows="4"
+            placeholder="Nhập bình luận của bạn..."
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+          ></textarea>
+          <div className="flex items-center mb-4">
+            <span className="text-gray-600 mr-2">Đánh giá:</span>
+            <select
+              className="border border-gray-300 rounded-md p-2"
+              value={newRating}
+              onChange={(e) => setNewRating(Number(e.target.value))}
+            >
+              {Array.from({ length: 5 }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1} sao
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            className={`px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            onClick={handleCommentSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Đang gửi..." : "Gửi bình luận"}
+          </button>
+        </div>
+      </div>
+
+      {/* Related Products Section */}
+      {relatedProducts.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6">Các sản phẩm khác</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {relatedProducts.map(product => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
