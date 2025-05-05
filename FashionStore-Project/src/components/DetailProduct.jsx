@@ -21,6 +21,7 @@ const DetailProduct = () => {
   const { comments, isSubmitting, fetchComments, addComment } = useComment();
   const [newComment, setNewComment] = useState("");
   const [newRating, setNewRating] = useState(5);
+  const [hasPurchased, setHasPurchased] = useState(false); // Kiểm tra quyền bình luận
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -62,6 +63,32 @@ const DetailProduct = () => {
       fetchComments(product.id); // Fetch comments for the current product
     }
   }, [product]);
+
+  useEffect(() => {
+    const checkPurchaseStatus = async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user) {
+        setHasPurchased(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:3001/orders?userId=${user.id}`);
+        const orders = await response.json();
+
+        // Kiểm tra xem user đã mua productId hay chưa
+        const purchased = orders.some((order) =>
+          order.items.some((item) => item.productId === parseInt(productId))
+        );
+        setHasPurchased(purchased);
+      } catch (error) {
+        console.error("Error checking purchase status:", error);
+        setHasPurchased(false);
+      }
+    };
+
+    checkPurchaseStatus();
+  }, [productId]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -116,10 +143,6 @@ const DetailProduct = () => {
   };
 
   const handleBuyNow = async () => {
-    const success = await handleAddToCart();
-    if (success) {
-      navigate('/cart');
-    }
   };
 
   const handleCommentSubmit = async () => {
@@ -351,39 +374,45 @@ const DetailProduct = () => {
         )}
 
         {/* Form gửi bình luận */}
-        <div className="mt-6">
-          <h4 className="text-lg font-semibold text-gray-800 mb-2">Viết đánh giá của bạn</h4>
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-lg mb-4"
-            rows="4"
-            placeholder="Nhập bình luận của bạn..."
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-          ></textarea>
-          <div className="flex items-center mb-4">
-            <span className="text-gray-600 mr-2">Đánh giá:</span>
-            <select
-              className="border border-gray-300 rounded-md p-2"
-              value={newRating}
-              onChange={(e) => setNewRating(Number(e.target.value))}
+        {hasPurchased ? (
+          <div className="mt-6">
+            <h4 className="text-lg font-semibold text-gray-800 mb-2">Viết đánh giá của bạn</h4>
+            <textarea
+              className="w-full p-3 border border-gray-300 rounded-lg mb-4"
+              rows="4"
+              placeholder="Nhập bình luận của bạn..."
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+            ></textarea>
+            <div className="flex items-center mb-4">
+              <span className="text-gray-600 mr-2">Đánh giá:</span>
+              <select
+                className="border border-gray-300 rounded-md p-2"
+                value={newRating}
+                onChange={(e) => setNewRating(Number(e.target.value))}
+              >
+                {Array.from({ length: 5 }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    {i + 1} sao
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button
+              className={`px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={handleCommentSubmit}
+              disabled={isSubmitting}
             >
-              {Array.from({ length: 5 }, (_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} sao
-                </option>
-              ))}
-            </select>
+              {isSubmitting ? "Đang gửi..." : "Gửi bình luận"}
+            </button>
           </div>
-          <button
-            className={`px-6 py-3 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-200 ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            onClick={handleCommentSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Đang gửi..." : "Gửi bình luận"}
-          </button>
-        </div>
+        ) : (
+          <p className="text-gray-600 mt-4">
+            Bạn cần mua sản phẩm này để có thể viết đánh giá.
+          </p>
+        )}
       </div>
 
       {/* Related Products Section */}

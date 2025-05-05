@@ -13,24 +13,17 @@ const Navigation = () => {
   const user = JSON.parse(localStorage.getItem('user'));
   const { cartItems } = useCart();
 
-  // Get the display name from user object, handling both regular and Google login
-  const getUserDisplayName = () => {
-    if (!user) return '';
-    // Check for name first (regular login), then full_name (Google login)
-    return user.name || user.full_name || user.username || 'User';
+  const handleSearchChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    // Điều hướng đến trang Products và truyền query qua URL
+    navigate(`/products?q=${encodeURIComponent(query.trim())}`);
   };
 
-  // Get the user's avatar URL
-  const getUserAvatar = () => {
-    if (!user) return '';
-    
-    // Check for Google profile picture first
-    if (user.google_id && user.picture) {
-      return user.picture;
-    }
-    
-    // Fall back to imageUrl for regular login
-    return user.imageUrl || '';
+  const handleSearchClick = () => {
+    // Điều hướng đến trang Products khi nhấn vào icon search
+    navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   const handleLogout = () => {
@@ -39,45 +32,9 @@ const Navigation = () => {
     window.location.reload();
   };
 
-  const handleLogin = () => {
-    window.location.reload();
-  };
-
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    if (query.trim()) {
-      navigate(`/products?q=${encodeURIComponent(query.trim())}`);
-    } else {
-      navigate(`/products`);
-    }
-  };
-
-  const userMenuItems = [
-    {
-      key: 'profile',
-      label: (
-        <Link to="/profile" className="flex items-center">
-          <FaUser className="mr-2" />
-          Profile
-        </Link>
-      ),
-    },
-    {
-      key: 'logout',
-      label: (
-        <button onClick={handleLogout} className="flex items-center w-full">
-          <FaSignOutAlt className="mr-2" />
-          Logout
-        </button>
-      ),
-    },
-  ];
-
   return (
     <nav className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-2 sm:px-4">
-        {/* Top Bar */}
+      <div className="drop-container mx-auto px-2 sm:px-4">
         <div className="flex items-center justify-between py-2 sm:py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center">
@@ -100,20 +57,20 @@ const Navigation = () => {
                 Admin Panel
               </Link>
             )}
-            
+
             {/* Search Bar */}
             <div className="relative ml-4 lg:ml-8">
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={handleSearchChange}
+                onChange={handleSearchChange} // Lọc sản phẩm khi thay đổi input
                 className="w-48 sm:w-64 px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               />
-              <FaSearch 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 hover:cursor-pointer" 
-                onClick={() => navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`)}
-                />
+              <FaSearch
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 hover:cursor-pointer"
+                onClick={handleSearchClick} // Lọc sản phẩm khi nhấn vào icon search
+              />
             </div>
           </div>
 
@@ -137,21 +94,42 @@ const Navigation = () => {
                   </Link>
                 )}
                 <Dropdown
-                  menu={{ items: userMenuItems }}
+                  menu={{
+                    items: [
+                      {
+                        key: 'profile',
+                        label: (
+                          <Link to="/profile" className="flex items-center">
+                            <FaUser className="mr-2" />
+                            Profile
+                          </Link>
+                        ),
+                      },
+                      {
+                        key: 'logout',
+                        label: (
+                          <button onClick={() => handleLogout()} className="flex items-center w-full">
+                            <FaSignOutAlt className="mr-2" />
+                            Logout
+                          </button>
+                        ),
+                      },
+                    ],
+                  }}
                   trigger={['click']}
                   placement="bottomRight"
                 >
                   <div className="flex items-center cursor-pointer hover:text-blue-500">
-                    {getUserAvatar() ? (
-                      <img 
-                        src={getUserAvatar()} 
-                        alt="Profile" 
+                    {user.imageUrl ? (
+                      <img
+                        src={user.imageUrl}
+                        alt="Profile"
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full mr-1 sm:mr-2 object-cover"
                       />
                     ) : (
                       <FaUser className="mr-1" />
                     )}
-                    <span className="hidden sm:inline">{getUserDisplayName()}</span>
+                    <span className="hidden sm:inline">{user.name || 'User'}</span>
                   </div>
                 </Dropdown>
               </>
@@ -172,34 +150,10 @@ const Navigation = () => {
             </button>
           </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4">
-            <div className="flex flex-col space-y-2">
-              <Link to="/" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
-                Home
-              </Link>
-              <Link to="/products" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
-                Products
-              </Link>
-              <Link to="/categories" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
-                Categories
-              </Link>
-              {user && user.role === 'admin' && (
-                <Link to="/admin" className="text-gray-600 hover:text-blue-500 px-2 py-1 rounded transition-colors">
-                  Admin Panel
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Login Modal */}
-      {showLoginModal && (
-        <LoginModal onClose={() => setShowLoginModal(false)} onLogin={handleLogin} />
-      )}
+      {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
     </nav>
   );
 };

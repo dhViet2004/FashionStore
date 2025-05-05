@@ -106,6 +106,29 @@
       "birthday": "Not provided",
       "phoneNumber": "Not provided",
       "id": 11
+    },
+    {
+      "username": "tai123",
+      "email": "tranthanhtai3804@gmail.com",
+      "password": "tai123",
+      "full_name": "Tài",
+      "role": "user",
+      "id": 12
+    },
+    {
+      "username": "tranthanhtai1928",
+      "email": "tranthanhtai1928@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Thành Tài Trần",
+      "name": "Thành Tài Trần",
+      "role": "user",
+      "google_id": "106601256188853447538",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocIWgOzNT_-9CAEOgo0v6ruw5cVepVQ073sW5MuOmLF2thguc7uW=s96-c",
+      "dateCreate": "2025-05-05T08:49:34.513Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 13
     }
   ],
   "products": [
@@ -769,6 +792,98 @@
           "note": "Status changed to delivered"
         }
       ]
+    },
+    {
+      "userId": 13,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 14,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 15,
+          "sizes": {
+            "size": "M",
+            "stock": 14
+          },
+          "userId": 13,
+          "id": 4
+        },
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "L",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 20,
+          "sizes": {
+            "size": "L",
+            "stock": 19
+          },
+          "userId": 13,
+          "id": 5
+        },
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 5,
+          "size": "XXXL",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 5,
+          "sizes": {
+            "size": "XXXL",
+            "stock": 4
+          },
+          "userId": 13,
+          "id": 6
+        },
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "XL",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 12,
+          "sizes": {
+            "size": "XL",
+            "stock": 11
+          },
+          "userId": 13,
+          "id": 7
+        },
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "S",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 10,
+          "sizes": {
+            "size": "S",
+            "stock": 9
+          },
+          "userId": 13,
+          "id": 8
+        }
+      ],
+      "total": 6630000,
+      "voucher": null,
+      "createdAt": "2025-05-05T08:54:40.867Z",
+      "id": 11,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "2025-05-05T08:56:33.043Z",
+          "note": "Status changed to pending"
+        }
+      ]
     }
   ],
   "comments": [
@@ -883,39 +998,6 @@
       "comment": "Đầm xinh, mặc đi làm hay đi chơi đều được. Đóng gói cẩn thận.",
       "rating": 5,
       "date": "2025-04-27"
-    },
-    {
-      "productId": 3,
-      "user": "tranthanhtai1928",
-      "comment": "d",
-      "rating": 5,
-      "date": "2025-05-05",
-      "id": 15
-    },
-    {
-      "productId": 3,
-      "user": "tranthanhtai1928",
-      "comment": "a",
-      "rating": 5,
-      "date": "2025-05-05",
-      "id": 16
-    },
-    {
-      "productId": 3,
-      "user": "tranthanhtai1928",
-      "comment": "ads",
-      "rating": 5,
-      "date": "2025-05-05",
-      "id": 17
-    },
-    {
-      "productId": 3,
-      "user": "tranthanhtai1928",
-      "comment": "a",
-      "rating": 5,
-      "date": "2025-05-05",
-      "avatar": "https://lh3.googleusercontent.com/a/ACg8ocIWgOzNT_-9CAEOgo0v6ruw5cVepVQ073sW5MuOmLF2thguc7uW=s96-c",
-      "id": 18
     }
   ]
 }

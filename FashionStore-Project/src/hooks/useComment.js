@@ -1,9 +1,10 @@
 import { useState } from "react";
 
 const useComment = () => {
-  const [comments, setComments] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [comments, setComments] = useState([]); // Danh sách bình luận
+  const [isSubmitting, setIsSubmitting] = useState(false); // Trạng thái gửi bình luận
 
+  // Fetch bình luận từ API
   const fetchComments = async (productId) => {
     try {
       const response = await fetch(`http://localhost:3001/comments?productId=${productId}`);
@@ -17,6 +18,7 @@ const useComment = () => {
     }
   };
 
+  // Thêm bình luận mới
   const addComment = async (commentData) => {
     setIsSubmitting(true);
     try {
@@ -26,12 +28,13 @@ const useComment = () => {
         throw new Error("User not logged in");
       }
 
-      // Thêm avatar từ imageUrl của người dùng vào comment
+      // Chuẩn bị dữ liệu bình luận
       const commentWithAvatar = {
         ...commentData,
-        avatar: user.imageUrl || null, // Sử dụng imageUrl nếu có, nếu không thì null
+        avatar: user.imageUrl || null, // Sử dụng avatar nếu có
       };
 
+      // Gửi bình luận lên API
       const response = await fetch("http://localhost:3001/comments", {
         method: "POST",
         headers: {
@@ -42,7 +45,7 @@ const useComment = () => {
 
       if (response.ok) {
         const newComment = await response.json();
-        setComments((prevComments) => [...prevComments, newComment]);
+        setComments((prevComments) => [...prevComments, newComment]); // Cập nhật danh sách bình luận
         return true;
       } else {
         console.error("Failed to add comment");
@@ -57,10 +60,10 @@ const useComment = () => {
   };
 
   return {
-    comments,
-    isSubmitting,
-    fetchComments,
-    addComment,
+    comments, // Danh sách bình luận
+    isSubmitting, // Trạng thái gửi bình luận
+    fetchComments, // Hàm fetch bình luận
+    addComment, // Hàm thêm bình luận
   };
 };
 
