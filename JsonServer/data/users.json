@@ -1,0 +1,151 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "name": "Hoàng Việt",
+      "password": "admin",
+      "role": "admin",
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
+      "dateCreate": "2023-01-15T10:20:30Z",
+      "address": "Bến Tre",
+      "birthday": "1990-05-20",
+      "phoneNumber": "0364601530",
+      "addresses": [
+        {
+          "province": "Hà Nội",
+          "district": "Cầu Giấy",
+          "address": "123 Đường ABC",
+          "isDefault": true
+        },
+        {
+          "province": "Hồ Chí Minh",
+          "district": "Quận 1",
+          "address": "456 Đường XYZ",
+          "isDefault": false
+        }
+      ],
+      "full_name": "Hoàng Việt",
+      "email": "dviet037@gmail.com"
+    },
+    {
+      "username": "user01",
+      "email": "dviet037@gmail.com",
+      "password": "user01",
+      "full_name": "Hoàng Việt",
+      "role": "user",
+      "id": 6,
+      "name": "Đặng Hoàng Việt",
+      "phoneNumber": "0364601530",
+      "address": "TP.Hồ Chí Minh"
+    },
+    {
+      "username": "duongsatlachong",
+      "email": "duongsatlachong@gmail.com",
+      "password": "google-oauth",
+      "full_name": "DuongSatLacHong",
+      "role": "user",
+      "google_id": "114249137217624289558",
+      "id": 7,
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJUIbTQbw55fnDI0jkY_eRcUKEeH-Qlwq4uX6-877ZzLZzLXD8=s96-c",
+      "name": "Đặng Hoàng Việt"
+    },
+    {
+      "username": "dhoangviet1612",
+      "email": "dhoangviet1612@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Viet Hoang",
+      "name": "Viet Hoang",
+      "role": "user",
+      "google_id": "115058230448698672084",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocKqq_DKVbDPGvtpAEvUDAfdEhWIJsztxwCGx8hdOwyA_y_L-Lw=s96-c",
+      "dateCreate": "2025-04-27T11:40:00.564Z",
+      "address": "Bến Tre",
+      "birthday": "2004-12-16",
+      "phoneNumber": "0364601530",
+      "id": 8
+    },
+    {
+      "username": "danghoangviet004",
+      "email": "danghoangviet004@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Hoàng Việt Đặng",
+      "name": "Hoàng Việt Đặng",
+      "role": "user",
+      "google_id": "111378788031572884782",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJbCTgdOQMpQAJ85pDsjwJjGu4r05Km0JRTmXmz5FAsGAlRtg=s96-c",
+      "dateCreate": "2025-04-27T11:40:30.021Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 9
+    },
+    {
+      "username": "luongtan204",
+      "email": "luongtan204@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Tan Luong",
+      "name": "Tan Luong",
+      "role": "user",
+      "google_id": "118406958966930316262",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJVA9bdnuNJ_rRQcomCI6GgX2BnZrQZPeomL7k-L7jNNd1FSh414w=s96-c",
+      "dateCreate": "2025-05-02T09:27:34.005Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 10,
+      "addresses": [
+        {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "address": "ddd",
+          "note": "",
+          "ward": "Xã Thung Nai",
+          "userId": 10,
+          "isDefault": true
+        }
+      ]
+    },
+    {
+      "username": "nickphubnmq",
+      "email": "nickphubnmq@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Vggkv Fgg",
+      "name": "Vggkv Fgg",
+      "role": "user",
+      "google_id": "105995992209999145751",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocKbyN5EdxVnjqdCe8hsFdTsylJehx9VOAYsodwqR7ZAoM9llg=s96-c",
+      "dateCreate": "2025-05-03T07:17:35.916Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 11
+    },
+    {
+      "username": "tai123",
+      "email": "tranthanhtai3804@gmail.com",
+      "password": "tai123",
+      "full_name": "Tài",
+      "role": "user",
+      "id": 12
+    },
+    {
+      "username": "tranthanhtai1928",
+      "email": "tranthanhtai1928@gmail.com",
+      "password": "google-oauth",
+      "full_name": "Thành Tài Trần",
+      "name": "Thành Tài Trần",
+      "role": "user",
+      "google_id": "106601256188853447538",
+      "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocIWgOzNT_-9CAEOgo0v6ruw5cVepVQ073sW5MuOmLF2thguc7uW=s96-c",
+      "dateCreate": "2025-05-05T08:49:34.513Z",
+      "address": "Not provided",
+      "birthday": "Not provided",
+      "phoneNumber": "Not provided",
+      "id": 13
+    }
+  ]
+}

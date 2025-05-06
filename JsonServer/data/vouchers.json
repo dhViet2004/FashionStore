@@ -1,0 +1,44 @@
+{
+  "vouchers": [
+    {
+      "id": 1,
+      "code": "FREESHIP",
+      "discount": 30000,
+      "type": "fixed",
+      "minOrder": 0,
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31",
+      "usedBy": []
+    },
+    {
+      "id": 2,
+      "code": "SALE10",
+      "discount": 10,
+      "type": "percentage",
+      "minOrder": 100000,
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31",
+      "usedBy": []
+    },
+    {
+      "id": 3,
+      "code": "SALE20",
+      "discount": 20,
+      "type": "percentage",
+      "minOrder": 200000,
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31",
+      "usedBy": []
+    },
+    {
+      "code": "30THANG4",
+      "type": "fixed",
+      "discount": 10,
+      "minOrder": 500000,
+      "startDate": "2025-04-30",
+      "endDate": "2025-05-31",
+      "id": "1746449354104",
+      "usedBy": []
+    }
+  ]
+}
