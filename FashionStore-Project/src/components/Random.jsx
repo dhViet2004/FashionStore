@@ -1,106 +1,153 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Button, Avatar, Modal, Tooltip } from 'antd';
+import { Button, Modal, Tooltip, message } from 'antd';
 import { 
   GiftOutlined,
-  MinusCircleOutlined,
   LoadingOutlined,
   CloseOutlined
 } from '@ant-design/icons';
 import { FaGift } from 'react-icons/fa';
+import { IoArrowBack } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+const API_URL = 'http://localhost:3001';
 
 const prizes = [
-  { id: 1, name: '50K', probability: 0.1, color: '#FF6B6B' },
-  { id: 2, name: '100K', probability: 0.05, color: '#4ECDC4' },
-  { id: 3, name: '200K', probability: 0.02, color: '#45B7D1' },
-  { id: 4, name: 'Free Ship', probability: 0.15, color: '#96CEB4' },
-  { id: 5, name: 'Chúc may mắn', probability: 0.68, color: '#FFEEAD' },
+  { id: 1, name: 'Giảm 10K', value: 10000, probability: 0.2, color: '#FF5733', voucherCode: 'LUCKY10K' },
+  { id: 2, name: 'Giảm 10%', percent: 10, probability: 0.15, color: '#FFC300', voucherCode: 'LUCKY10PERCENT' },
+  { id: 3, name: 'Giảm 50K', value: 50000, probability: 0.1, color: '#28A745', voucherCode: 'LUCKY50K' },
+  { id: 4, name: 'Giảm 200k', value: 200000, probability: 0.00000005, color: '#17A2B8', voucherCode: 'LUCKY200K' },
+  { id: 5, name: 'Tiếc quá', value: 0, probability: 0.5, color: '#6610F2' },
 ];
 
 const Random = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSpinning, setIsSpinning] = useState(false);
   const [result, setResult] = useState(null);
   const [rotation, setRotation] = useState(0);
   const wheelRef = useRef(null);
-  const [pressStart, setPressStart] = useState(null);
-  const [pendingSpin, setPendingSpin] = useState(false);
+  const [hasSpun, setHasSpun] = useState(false);
+  const [voucherList, setVoucherList] = useState([]);
 
-  // Hàm xử lý khi bắt đầu nhấn giữ nút quay
-  const handleSpinPress = () => {
-    setPressStart(Date.now());
-    setPendingSpin(true);
+  // Load voucher từ localStorage khi component mount
+  useEffect(() => {
+    const savedVouchers = JSON.parse(localStorage.getItem("voucherList")) || [];
+    setVoucherList(savedVouchers);
+  }, []);
+
+  // Lưu voucher vào ví voucher của người dùng
+  const saveVoucher = async (prize) => {
+    if (prize.name === "Tiếc quá") {
+      message.info("Chúc bạn may mắn lần sau!");
+      return;
+    }
+
+    try {
+      // Lấy thông tin user hiện tại từ localStorage
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        message.error('Vui lòng đăng nhập để nhận voucher');
+        navigate('/login');
+        return;
+      }
+
+      // Lấy thông tin voucher từ server
+      const response = await fetch(`${API_URL}/vouchers`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch vouchers');
+      }
+      
+      const vouchers = await response.json();
+      console.log('Available vouchers:', vouchers); // Debug log
+      console.log('Looking for voucher code:', prize.voucherCode); // Debug log
+      
+      // Tìm voucher và kiểm tra điều kiện
+      const voucher = vouchers.find(v => v.code === prize.voucherCode);
+      console.log('Found voucher:', voucher); // Debug log
+
+      if (!voucher) {
+        console.error('Voucher not found. Available codes:', vouchers.map(v => v.code)); // Debug log
+        throw new Error(`Voucher not found with code: ${prize.voucherCode}`);
+      }
+
+      // Kiểm tra voucher đã hết hạn chưa
+      const currentDate = new Date();
+      const endDate = new Date(voucher.endDate);
+      if (currentDate > endDate) {
+        message.error('Voucher đã hết hạn');
+        return;
+      }
+
+      // Kiểm tra user đã được cấp voucher này chưa
+      if (voucher.userIds && voucher.userIds.includes(user.id)) {
+        message.error('Bạn đã được cấp voucher này rồi');
+        return;
+      }
+
+      // Thêm user vào danh sách userIds
+      const updatedVoucher = {
+        ...voucher,
+        userIds: [...(voucher.userIds || []), user.id]
+      };
+
+      // Cập nhật voucher trên server
+      const updateResponse = await fetch(`${API_URL}/vouchers/${voucher.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userIds: updatedVoucher.userIds })
+      });
+
+      if (!updateResponse.ok) {
+        throw new Error('Failed to update voucher');
+      }
+
+      message.success(`Chúc mừng! Bạn đã nhận được voucher ${prize.name}`);
+    } catch (error) {
+      console.error('Error saving voucher:', error);
+      message.error("Có lỗi xảy ra khi lưu voucher!");
+    }
   };
 
-  // Hàm xử lý khi thả nút quay
-  const handleSpinRelease = () => {
-    if (!pendingSpin) return;
-    setPendingSpin(false);
-    const now = Date.now();
-    const holdMs = Math.min(now - pressStart, 3000); // Giới hạn tối đa 3s
-    const minRounds = 8;
-    const maxRounds = 20;
-    // Số vòng tỷ lệ thuận với thời gian giữ
-    const spinRounds = minRounds + Math.round((maxRounds - minRounds) * (holdMs / 3000));
-    spinWheel(spinRounds);
-  };
-
-  // Sửa spinWheel nhận số vòng làm tham số
-  const spinWheel = (spinRounds = 8 + Math.floor(Math.random() * 5)) => {
-    if (isSpinning) return;
+  const spinWheel = () => {
+    if (isSpinning || hasSpun) return;
     setIsSpinning(true);
     setResult(null);
+    setHasSpun(true);
 
-    // 1. Đầu tiên chọn phần thưởng dựa trên xác suất, đảm bảo khác với kết quả trước
+    // Chọn phần thưởng dựa trên xác suất
     let selectedPrize;
-    do {
-      const random = Math.random();
-      let cumulativeProbability = 0;
-      selectedPrize = prizes[prizes.length - 1];
-      for (const prize of prizes) {
-        cumulativeProbability += prize.probability;
-        if (random <= cumulativeProbability) {
-          selectedPrize = prize;
-          break;
-        }
+    const random = Math.random();
+    let cumulativeProbability = 0;
+    selectedPrize = prizes[prizes.length - 1];
+    for (const prize of prizes) {
+      cumulativeProbability += prize.probability;
+      if (random <= cumulativeProbability) {
+        selectedPrize = prize;
+        break;
       }
-    } while (result && selectedPrize.id === result.id);
+    }
 
-    // 2. Tính toán góc quay để phần thưởng trúng nằm ở vị trí mũi tên trên cùng
+    // Tính toán góc quay
     const prizeIndex = prizes.findIndex(p => p.id === selectedPrize.id);
     const sectorAngle = 360 / prizes.length;
-    // Tính góc để phần thưởng nằm ở vị trí mũi tên (180 độ)
     const targetAngle = 180 - (prizeIndex * sectorAngle + sectorAngle / 2);
-    // Thêm một chút ngẫu nhiên để tạo hiệu ứng tự nhiên
     const jitter = (Math.random() - 0.5) * 10;
-    // Luôn quay đúng 3 vòng (1080 độ) trước khi dừng
     const finalRotation = 360 * 3 + targetAngle + jitter;
 
-    // Reset rotation về 0 trước khi quay
     setRotation(0);
-    // Đợi một chút để reset hoàn tất
     setTimeout(() => {
       setRotation(finalRotation);
-      // Thời gian quay cố định 6 giây (2 giây cho mỗi vòng)
       const spinDuration = 6000;
       setTimeout(() => {
         setIsSpinning(false);
         setResult(selectedPrize);
+        saveVoucher(selectedPrize);
       }, spinDuration);
     }, 50);
   };
-
-  // Hỗ trợ phím tắt Ctrl+Enter để quay
-  useEffect(() => {
-    if (!isModalOpen) return;
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey && e.key === 'Enter') {
-        spinWheel();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isModalOpen, isSpinning]);
 
   // Nội dung vòng quay trong modal
   const renderWheel = () => (
@@ -121,16 +168,14 @@ const Random = () => {
         >
           {prizes.map((prize, index) => {
             const angle = (360 / prizes.length) * (index + 0.5);
-            // Đặt label ra xa tâm, luôn nằm ngang
             return (
               <div
                 key={prize.id}
                 className="absolute left-1/2 top-1/2"
                 style={{
                   transform: `rotate(${angle}deg) translateY(-175px) rotate(${-angle}deg)`,
-                  // 175px ~ 70% bán kính (500px/2*0.7)
                   width: '120px',
-                  marginLeft: '-60px', // căn giữa label
+                  marginLeft: '-60px',
                   textAlign: 'center',
                   pointerEvents: 'none',
                 }}
@@ -138,10 +183,8 @@ const Random = () => {
                 <span
                   className="font-bold text-3xl px-2"
                   style={{
-                    color: index % 2 === 0 ? '#222' : '#333',
-                    textShadow: '2px 2px 8px rgba(255,255,255,0.7)',
-                    background: 'rgba(255,255,255,0.6)',
-                    borderRadius: '12px',
+                    color: '#ffffff',
+                    textShadow: '2px 2px 8px rgba(0,0,0,0.5)',
                     display: 'inline-block',
                   }}
                 >
@@ -151,53 +194,31 @@ const Random = () => {
             );
           })}
         </div>
-        {/* Mũi tên chỉ */}
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0 border-l-[24px] border-r-[24px] border-t-[48px] border-l-transparent border-r-transparent border-t-yellow-400 drop-shadow-lg"></div>
-        {/* Hướng dẫn ở giữa vòng quay */}
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center font-extrabold text-3xl text-white select-none pointer-events-none"
-          style={{
-            textShadow: '3px 3px 12px #000, 0 0 8px #fff',
-            lineHeight: 1.2,
-            background: 'rgba(0,0,0,0.25)',
-            borderRadius: '16px',
-            padding: '8px 16px',
-          }}
-        >
-          Click để quay<br />hoặc nhấn <span style={{color:'#ffe600'}}>ctrl+enter</span>
-        </div>
       </div>
-      {/* Kết quả */}
       {result && (
-        <div className="text-center mb-6">
-          <p className="text-3xl font-bold text-green-600 drop-shadow">Chúc mừng!</p>
-          <p className="text-4xl font-extrabold text-red-500 drop-shadow-lg">{result.name}</p>
+        <div className="mt-8 text-4xl font-extrabold text-green-700 drop-shadow-lg animate-bounce bg-yellow-200 px-6 py-3 rounded-xl border-4 border-yellow-500">
+          🎉
+          {result.name === "Tiếc quá" ? (
+            <span className="text-red-500 block mt-3 text-2xl">
+              Hẹn gặp lại lần sau!
+            </span>
+          ) : (
+            "Bạn nhận được: " + result.name
+          )}
         </div>
       )}
-      {/* Nút quay */}
-      <Button
-        type="primary"
-        size="large"
-        className="w-60 h-16 text-2xl bg-red-500 hover:bg-red-600 shadow-xl"
-        onMouseDown={handleSpinPress}
-        onMouseUp={handleSpinRelease}
-        onMouseLeave={handleSpinRelease}
-        onTouchStart={handleSpinPress}
-        onTouchEnd={handleSpinRelease}
-        disabled={isSpinning}
-        icon={isSpinning ? <LoadingOutlined className="text-2xl" /> : <GiftOutlined className="text-2xl" />}
+      <button
+        onClick={spinWheel}
+        className={`mt-10 px-12 py-5 font-extrabold text-3xl rounded-full shadow-lg transform transition-all duration-300 ${
+          hasSpun
+            ? "bg-gray-400 cursor-not-allowed"
+            : "bg-gradient-to-r from-pink-500 to-red-500 text-white hover:scale-125"
+        }`}
+        disabled={hasSpun}
       >
-        {isSpinning ? 'Đang quay...' : 'Quay ngay'}
-      </Button>
-      {/* Thể lệ */}
-      <div className="mt-8 text-lg text-gray-600">
-        <p className="font-bold mb-2">Thể lệ:</p>
-        <ul className="list-disc list-inside space-y-2">
-          <li>Mỗi người chỉ được quay 1 lần/ngày</li>
-          <li>Phần thưởng sẽ được gửi qua email</li>
-          <li>Voucher có hiệu lực trong 30 ngày</li>
-        </ul>
-      </div>
+        🎡 Quay ngay!
+      </button>
     </div>
   );
 
@@ -226,6 +247,16 @@ const Random = () => {
         className="lucky-wheel-modal"
       >
         <div className="p-10 flex flex-col items-center justify-center">
+          <div
+            className="absolute top-4 left-6 flex items-center gap-2 text-white text-lg font-semibold cursor-pointer hover:scale-110 transition-transform"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <IoArrowBack className="text-4xl" />
+            <span className="text-2xl">Trở về</span>
+          </div>
+          <h1 className="text-6xl font-extrabold text-white mb-12 drop-shadow-lg animate-pulse">
+            Vòng quay may mắn 🎉
+          </h1>
           {renderWheel()}
         </div>
       </Modal>

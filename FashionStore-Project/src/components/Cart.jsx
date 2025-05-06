@@ -57,29 +57,53 @@ export default function Cart() {
         throw new Error('Failed to fetch vouchers')
       }
       const allVouchers = await response.json()
+      console.log('All vouchers from API:', allVouchers)
+      console.log('Current user ID:', userId)
       
       // Lọc voucher dành riêng cho user
       const userSpecificVouchers = allVouchers.filter(voucher => {
-        // Kiểm tra voucher có dành riêng cho user này không
-        if (voucher.userId && voucher.userId !== userId) {
-          return false
+        console.log('\nChecking voucher:', voucher.code)
+        
+        // Kiểm tra voucher có userIds không
+        if (voucher.userIds && voucher.userIds.length > 0) {
+          // Nếu có userIds, chỉ hiển thị cho user trong danh sách
+          if (!voucher.userIds.includes(userId)) {
+            console.log(`${voucher.code}: Filtered out - Not in userIds list`)
+            return false
+          }
+        } else {
+          // Nếu không có userIds, hiển thị cho tất cả user
+          console.log(`${voucher.code}: Available for all users`)
         }
         
         // Kiểm tra voucher đã hết hạn chưa
         const currentDate = new Date()
         const endDate = new Date(voucher.endDate)
+        
+        // Reset time part to compare only dates
+        currentDate.setHours(0, 0, 0, 0)
+        endDate.setHours(0, 0, 0, 0)
+        
+        console.log(`${voucher.code}: Current date:`, currentDate.toISOString().split('T')[0])
+        console.log(`${voucher.code}: End date:`, endDate.toISOString().split('T')[0])
+        console.log(`${voucher.code}: Is expired?`, currentDate > endDate)
+        
         if (currentDate > endDate) {
+          console.log(`${voucher.code}: Filtered out - Expired`)
           return false
         }
 
-        // Kiểm tra voucher đã được sử dụng chưa
+        // Kiểm tra voucher đã được sử dụng bởi user này chưa
         if (voucher.usedBy && voucher.usedBy.includes(userId)) {
+          console.log(`${voucher.code}: Filtered out - Already used by this user`)
           return false
         }
 
+        console.log(`${voucher.code}: Passed all filters`)
         return true
       })
 
+      console.log('\nFinal filtered vouchers:', userSpecificVouchers)
       setAvailableVouchers(allVouchers)
       setUserVouchers(userSpecificVouchers)
     } catch (error) {
@@ -273,12 +297,13 @@ export default function Cart() {
     console.log('Subtotal:', subtotal)
 
     if (appliedVoucher.type === 'fixed') {
+      // For fixed discount, return the discount amount directly
       return appliedVoucher.discount
     } else {
-      const subtotalInVND = subtotal * 1000 // Convert to VND
-      const discount = (subtotalInVND * appliedVoucher.discount) / 100
+      // For percentage discount, calculate based on subtotal
+      const discount = (subtotal * appliedVoucher.discount) / 100
       console.log('Percentage discount:', discount)
-      return discount
+      return Math.round(discount) // Round to avoid floating point issues
     }
   }
 
