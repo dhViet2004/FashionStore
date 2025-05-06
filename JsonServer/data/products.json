@@ -325,9 +325,13 @@
         {
           "size": "M",
           "stock": 30
+        },
+        {
+          "size": "L",
+          "stock": 22
         }
       ],
-      "stock": 41,
+      "stock": 63,
       "rating": 0,
       "reviews": 0,
       "id": 15
@@ -491,6 +495,27 @@
       "rating": 0,
       "reviews": 0,
       "id": 23
+    },
+    {
+      "name": "Áo thun nữ màu trắng",
+      "category": "Shoes",
+      "price": 500000,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1746459606/vn-11134207-7ra0g-m81f5vrwlojmcb_s3hbol.webp",
+      "description": "xinh",
+      "sizes": [
+        {
+          "size": "M",
+          "stock": 12
+        },
+        {
+          "size": "S",
+          "stock": 13
+        }
+      ],
+      "stock": 25,
+      "rating": 0,
+      "reviews": 0,
+      "id": 24
     }
   ]
 }
