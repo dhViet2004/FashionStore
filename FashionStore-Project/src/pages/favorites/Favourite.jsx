@@ -7,75 +7,42 @@ const Favourite = () => {
   useEffect(() => {
     // Lấy thông tin người dùng từ localStorage
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.favourite) {
-      setFavourites(user.favourite); // Gán danh sách yêu thích từ user
+    if (user && user.favorite) {
+      // Lọc ra các sản phẩm có đầy đủ thông tin (không phải chỉ là ID)
+      const fullProducts = user.favorite.filter(item => typeof item === 'object' && item.imageUrl);
+      setFavourites(fullProducts);
     }
   }, []);
 
   // Phân loại sản phẩm theo danh mục
-  const categorizedFavourites = {
-    Jeans: favourites.filter((item) => item.category === 'Jeans'),
-    Jackets: favourites.filter((item) => item.category === 'Jackets'),
-    Shoes: favourites.filter((item) => item.category === 'Shoes'),
-  };
+  const categorizedFavourites = favourites.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {});
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-8">Sản phẩm yêu thích</h1>
 
       {favourites.length > 0 ? (
-        <>
-          {/* Jeans */}
-          {categorizedFavourites.Jeans.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Jeans</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {categorizedFavourites.Jeans.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    product={item} // Truyền sản phẩm vào ProductCard
-                    onAddToCart={() => console.log(`Thêm vào giỏ hàng: ${item.name}`)} // Hàm xử lý thêm vào giỏ hàng
-                    onPayNow={() => console.log(`Thanh toán ngay: ${item.name}`)} // Hàm xử lý thanh toán
-                  />
-                ))}
-              </div>
+        Object.entries(categorizedFavourites).map(([category, products]) => (
+          <div key={category} className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">{category}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {products.map((item) => (
+                <ProductCard
+                  key={item.id}
+                  product={item} // Truyền sản phẩm vào ProductCard
+                  onAddToCart={() => console.log(`Thêm vào giỏ hàng: ${item.name}`)} // Hàm xử lý thêm vào giỏ hàng
+                  onPayNow={() => console.log(`Thanh toán ngay: ${item.name}`)} // Hàm xử lý thanh toán
+                />
+              ))}
             </div>
-          )}
-
-          {/* Jackets */}
-          {categorizedFavourites.Jackets.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Jackets</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {categorizedFavourites.Jackets.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    product={item} // Truyền sản phẩm vào ProductCard
-                    onAddToCart={() => console.log(`Thêm vào giỏ hàng: ${item.name}`)} // Hàm xử lý thêm vào giỏ hàng
-                    onPayNow={() => console.log(`Thanh toán ngay: ${item.name}`)} // Hàm xử lý thanh toán
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Shoes */}
-          {categorizedFavourites.Shoes.length > 0 && (
-            <div className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4">Shoes</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {categorizedFavourites.Shoes.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    product={item} // Truyền sản phẩm vào ProductCard
-                    onAddToCart={() => console.log(`Thêm vào giỏ hàng: ${item.name}`)} // Hàm xử lý thêm vào giỏ hàng
-                    onPayNow={() => console.log(`Thanh toán ngay: ${item.name}`)} // Hàm xử lý thanh toán
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+          </div>
+        ))
       ) : (
         <p className="text-gray-600">Bạn chưa có sản phẩm yêu thích nào.</p>
       )}
