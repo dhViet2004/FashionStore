@@ -22,6 +22,8 @@ const DetailProduct = () => {
   const [newComment, setNewComment] = useState("");
   const [newRating, setNewRating] = useState(5);
   const [hasPurchased, setHasPurchased] = useState(false); // Kiểm tra quyền bình luận
+  const [calculatedRating, setCalculatedRating] = useState(0);
+  const [calculatedReviews, setCalculatedReviews] = useState(0);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -45,7 +47,7 @@ const DetailProduct = () => {
     const fetchRelatedProducts = async () => {
       try {
         // Fetch 5 products excluding the current one
-        const response = await fetch(`http://localhost:3001/products?_limit=5`);
+        const response = await fetch(`http://localhost:3001/products?_limit=6`);
         const data = await response.json();
         setRelatedProducts(data.filter(p => p.id !== product.id));
       } catch (error) {
@@ -89,6 +91,27 @@ const DetailProduct = () => {
 
     checkPurchaseStatus();
   }, [productId]);
+
+  useEffect(() => {
+    if (comments && comments.length > 0) {
+      const totalRating = comments.reduce((sum, c) => sum + (c.rating || 0), 0);
+      setCalculatedRating((totalRating / comments.length).toFixed(1));
+      setCalculatedReviews(comments.length);
+    } else {
+      setCalculatedRating(0);
+      setCalculatedReviews(0);
+    }
+  }, [comments]);
+
+  useEffect(() => {
+    if (product) {
+      setProduct(prev => ({
+        ...prev,
+        rating: calculatedRating,
+        reviews: calculatedReviews
+      }));
+    }
+  }, [calculatedRating, calculatedReviews]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -217,16 +240,16 @@ const DetailProduct = () => {
   }
 
   return (
-    <div className="container mx-auto py-4 ">
+    <div className="container mx-auto py-4">
       {/* Nút trở về */}
-      <span 
+      <button 
         onClick={() => navigate(-1)} 
-        className="absolute left-26 top-24 text-2xl mb-4 text-gray-600 cursor-pointer pl-3 pr-4 pt-1 pb-1 rounded hover:bg-gray-200 select-none"
+        className="ml-2 pl-4 pr-4 pt-2 pb-2 rounded hover:bg-gray-100 transition-all duration-300"
       >
-        <FaArrowLeft  />
-      </span>
-      <div className="flex flex-col md:flex-row items-center bg-white p-6 rounded-lg shadow-lg mb-8 pt-12">
-        
+        <FaArrowLeft className="text-xl text-gray-600 hover:text-gray-800" />
+      </button>
+
+      <div className="flex flex-col md:flex-row items-center bg-white p-6 pt-2 rounded-lg shadow-lg mb-8 ">
         <div className="md:w-1/4 mb-6 md:mb-0">
           <img
             src={product.imageUrl}
@@ -241,10 +264,10 @@ const DetailProduct = () => {
 
           <div className="flex flex-col mb-2">
             <div className="flex items-center">
-              <div className="flex mr-2">{renderStars(product.rating)}</div>
-              <span className="text-sm text-gray-600">({product.rating})</span>
+              <div className="flex mr-2">{renderStars(calculatedRating)}</div>
+              <span className="text-sm text-gray-600">({calculatedRating})</span>
             </div>
-            <span className="text-sm text-gray-500">({product.reviews} reviews)</span>
+            <span className="text-sm text-gray-500">({calculatedReviews} reviews)</span>
           </div>
 
           <p className="text-2xl text-blue-600 my-4">
@@ -327,12 +350,6 @@ const DetailProduct = () => {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Thêm phần detailDescription */}
-      <div className="bg-gray-100 p-6 rounded-lg shadow-lg mb-8">
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Chi tiết sản phẩm</h3>
-        <p className="text-gray-600">{product.detailDescription}</p>
       </div>
 
       {/* Phần hiển thị bình luận */}
@@ -419,7 +436,7 @@ const DetailProduct = () => {
       {relatedProducts.length > 0 && (
         <div className="mt-12">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">Các sản phẩm khác</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-4 md:gap-6">
             {relatedProducts.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
