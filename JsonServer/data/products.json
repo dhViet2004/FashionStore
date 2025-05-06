@@ -470,6 +470,27 @@
       "rating": 0,
       "reviews": 0,
       "id": 22
+    },
+    {
+      "name": "Áo thun nữ màu trắng",
+      "category": "Shoes",
+      "price": 50000,
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1746459606/vn-11134207-7ra0g-m81f5vrwlojmcb_s3hbol.webp",
+      "description": "xinh lắm nha",
+      "sizes": [
+        {
+          "size": "S",
+          "stock": 23
+        },
+        {
+          "size": "L",
+          "stock": 33
+        }
+      ],
+      "stock": 56,
+      "rating": 0,
+      "reviews": 0,
+      "id": 23
     }
   ]
 }
