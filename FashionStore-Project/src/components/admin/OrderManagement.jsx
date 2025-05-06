@@ -86,18 +86,27 @@ const OrderManagement = () => {
       const order = orders.find(o => o.id === orderId);
       if (!order) return;
 
+      // Format current date to Vietnamese format
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const day = now.getDate().toString().padStart(2, '0');
+      const month = (now.getMonth() + 1).toString().padStart(2, '0');
+      const year = now.getFullYear();
+      const formattedDate = `${hours}:${minutes} ${day}/${month}/${year}`;
+
       const updatedOrder = {
         ...order,
         status: newStatus,
         statusHistory: Array.isArray(order.statusHistory) 
           ? [...order.statusHistory, {
               status: newStatus,
-              timestamp: new Date().toISOString(),
+              timestamp: formattedDate,
               note: `Status changed to ${newStatus}`
             }]
           : [{
               status: newStatus,
-              timestamp: new Date().toISOString(),
+              timestamp: formattedDate,
               note: `Status changed to ${newStatus}`
             }]
       };
@@ -147,8 +156,35 @@ const OrderManagement = () => {
       title: 'Date',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date) => format(new Date(date), 'PPP'),
-      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      render: (date) => {
+        try {
+          if (!date) return 'N/A';
+          const dateObj = new Date(date);
+          if (isNaN(dateObj.getTime())) return 'Invalid Date';
+          
+          // Format date to Vietnamese format
+          const hours = dateObj.getHours().toString().padStart(2, '0');
+          const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+          const day = dateObj.getDate().toString().padStart(2, '0');
+          const month = (dateObj.getMonth() + 1).toString().padStart(2, '0');
+          const year = dateObj.getFullYear();
+          
+          return `${hours}:${minutes} ${day}/${month}/${year}`;
+        } catch (error) {
+          console.error('Error formatting date:', error);
+          return 'Invalid Date';
+        }
+      },
+      sorter: (a, b) => {
+        try {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
+          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+          return dateA - dateB;
+        } catch {
+          return 0;
+        }
+      },
     },
     {
       title: 'Customer',
@@ -223,39 +259,46 @@ const OrderManagement = () => {
   });
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Order Management</h1>
-        <Space>
-          <Input
-            placeholder="Search orders..."
-            prefix={<SearchOutlined />}
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            style={{ width: 200 }}
-          />
-          <Select
-            defaultValue="all"
-            style={{ width: 120 }}
-            onChange={setStatusFilter}
-          >
-            <Option value="all">All Status</Option>
-            <Option value="pending">Pending</Option>
-            <Option value="confirmed">Confirmed</Option>
-            <Option value="processing">Processing</Option>
-            <Option value="shipped">Shipped</Option>
-            <Option value="delivered">Delivered</Option>
-          </Select>
-        </Space>
+    <div className="p-4 md:p-6">
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <h1 className="text-2xl font-bold text-center md:text-left">Order Management</h1>
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+            <Input
+              placeholder="Search orders..."
+              prefix={<SearchOutlined />}
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full md:w-[200px]"
+            />
+            <Select
+              defaultValue="all"
+              className="w-full md:w-[200px]"
+              onChange={setStatusFilter}
+            >
+              <Option value="all">All Status</Option>
+              <Option value="pending">Pending</Option>
+              <Option value="confirmed">Confirmed</Option>
+              <Option value="processing">Processing</Option>
+              <Option value="shipped">Shipped</Option>
+              <Option value="delivered">Delivered</Option>
+            </Select>
+          </div>
+        </div>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={filteredOrders}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={filteredOrders}
+          rowKey="id"
+          loading={loading}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1200 }}
+          size="middle"
+          bordered
+        />
+      </div>
 
       <Modal
         title={
@@ -267,12 +310,14 @@ const OrderManagement = () => {
         open={isModalVisible}
         onCancel={() => setIsModalVisible(false)}
         footer={null}
-        width={800}
+        width="95%"
+        style={{ maxWidth: '800px' }}
+        className="order-details-modal"
       >
         {selectedOrder && (
           <div className="space-y-6">
             <Card>
-              <Descriptions title="Order Information" bordered>
+              <Descriptions title="Order Information" bordered column={{ xs: 1, sm: 2, md: 3 }}>
                 <Descriptions.Item label="Order ID" span={3}>
                   <Space>
                     <BarcodeOutlined />
@@ -307,7 +352,7 @@ const OrderManagement = () => {
                 <span>Customer Information</span>
               </div>
             }>
-              <Descriptions bordered>
+              <Descriptions bordered column={{ xs: 1, sm: 2, md: 3 }}>
                 <Descriptions.Item label="Customer ID" span={3}>
                   User #{selectedOrder.userId}
                 </Descriptions.Item>
@@ -345,39 +390,44 @@ const OrderManagement = () => {
                 <span>Order Items</span>
               </div>
             }>
-              <Table
-                dataSource={selectedOrder.items}
-                columns={[
-                  {
-                    title: 'Product',
-                    dataIndex: 'name',
-                    key: 'name',
-                    render: (text, record) => (
-                      <Space>
-                        <img src={record.imageUrl} alt={text} className="w-10 h-10 object-cover rounded" />
-                        <span>{text}</span>
-                      </Space>
-                    ),
-                  },
-                  {
-                    title: 'Price',
-                    dataIndex: 'price',
-                    key: 'price',
-                    render: (price) => formatCurrency(price),
-                  },
-                  {
-                    title: 'Quantity',
-                    dataIndex: 'quantity',
-                    key: 'quantity',
-                  },
-                  {
-                    title: 'Total',
-                    key: 'total',
-                    render: (_, record) => formatCurrency(record.price * record.quantity),
-                  },
-                ]}
-                pagination={false}
-              />
+              <div className="overflow-x-auto">
+                <Table
+                  dataSource={selectedOrder.items}
+                  columns={[
+                    {
+                      title: 'Product',
+                      dataIndex: 'name',
+                      key: 'name',
+                      render: (text, record) => (
+                        <Space>
+                          <img src={record.imageUrl} alt={text} className="w-10 h-10 object-cover rounded" />
+                          <span>{text}</span>
+                        </Space>
+                      ),
+                    },
+                    {
+                      title: 'Price',
+                      dataIndex: 'price',
+                      key: 'price',
+                      render: (price) => formatCurrency(price),
+                    },
+                    {
+                      title: 'Quantity',
+                      dataIndex: 'quantity',
+                      key: 'quantity',
+                    },
+                    {
+                      title: 'Total',
+                      key: 'total',
+                      render: (_, record) => formatCurrency(record.price * record.quantity),
+                    },
+                  ]}
+                  pagination={false}
+                  scroll={{ x: 600 }}
+                  size="middle"
+                  bordered
+                />
+              </div>
               <Divider />
               <div className="text-right">
                 <Typography.Title level={4}>
@@ -397,23 +447,70 @@ const OrderManagement = () => {
                 </div>
               }>
                 <Timeline
-                  items={selectedOrder.statusHistory.map((history) => ({
-                    key: history.timestamp,
-                    color: getStatusColor(history.status),
-                    children: (
-                      <div className="space-y-1" key={history.timestamp}>
-                        <div className="flex items-center space-x-2">
-                          <Tag color={getStatusColor(history.status)} icon={getStatusIcon(history.status)}>
-                            {history.status.toUpperCase()}
-                          </Tag>
-                          <span className="text-gray-500">
-                            {format(new Date(history.timestamp), 'PPp')}
-                          </span>
-                        </div>
-                        <p className="text-gray-600 ml-8">{history.note}</p>
-                      </div>
-                    ),
-                  }))}
+                  items={selectedOrder.statusHistory.map((history) => {
+                    try {
+                      const date = new Date(history.timestamp);
+                      if (isNaN(date.getTime())) {
+                        return {
+                          key: history.timestamp,
+                          color: getStatusColor(history.status),
+                          children: (
+                            <div className="space-y-1" key={history.timestamp}>
+                              <div className="flex items-center space-x-2">
+                                <Tag color={getStatusColor(history.status)} icon={getStatusIcon(history.status)}>
+                                  {history.status.toUpperCase()}
+                                </Tag>
+                                <span className="text-gray-500">Invalid Date</span>
+                              </div>
+                              <p className="text-gray-600 ml-8">{history.note}</p>
+                            </div>
+                          ),
+                        };
+                      }
+                      
+                      // Format date to Vietnamese format
+                      const hours = date.getHours().toString().padStart(2, '0');
+                      const minutes = date.getMinutes().toString().padStart(2, '0');
+                      const day = date.getDate().toString().padStart(2, '0');
+                      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                      const year = date.getFullYear();
+                      
+                      return {
+                        key: history.timestamp,
+                        color: getStatusColor(history.status),
+                        children: (
+                          <div className="space-y-1" key={history.timestamp}>
+                            <div className="flex items-center space-x-2">
+                              <Tag color={getStatusColor(history.status)} icon={getStatusIcon(history.status)}>
+                                {history.status.toUpperCase()}
+                              </Tag>
+                              <span className="text-gray-500">
+                                {`${hours}:${minutes} ${day}/${month}/${year}`}
+                              </span>
+                            </div>
+                            <p className="text-gray-600 ml-8">{history.note}</p>
+                          </div>
+                        ),
+                      };
+                    } catch (error) {
+                      console.error('Error formatting status history date:', error);
+                      return {
+                        key: history.timestamp,
+                        color: getStatusColor(history.status),
+                        children: (
+                          <div className="space-y-1" key={history.timestamp}>
+                            <div className="flex items-center space-x-2">
+                              <Tag color={getStatusColor(history.status)} icon={getStatusIcon(history.status)}>
+                                {history.status.toUpperCase()}
+                              </Tag>
+                              <span className="text-gray-500">Invalid Date</span>
+                            </div>
+                            <p className="text-gray-600 ml-8">{history.note}</p>
+                          </div>
+                        ),
+                      };
+                    }
+                  })}
                 />
               </Card>
             )}
