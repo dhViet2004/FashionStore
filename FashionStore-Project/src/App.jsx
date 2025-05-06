@@ -15,6 +15,9 @@ import ZaloChat from './components/ZaloChat';
 import AIChatBox from './components/AIChatBox';
 import Favourite from './pages/favorites/Favourite';
 import Random from './components/Random';
+import AboutUs from './pages/AboutUs';
+import Contact from './pages/Contact';
+
 function App() {
   return (
     <Router>
@@ -32,6 +35,8 @@ function App() {
             <Route path="/login" element={<LoginModal onClose={() => window.history.back()} onLogin={() => window.location.reload()} />} />
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/favorites" element={<Favourite />} />
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<Contact />} />
           </Routes>
         </main>
         <Footer />
