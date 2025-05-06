@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaTruck, FaCreditCard, FaGift, FaCheck } from 'react-icons/fa';
+import { toast } from 'react-hot-toast';
+import { useCart } from '../hooks/useCart';
 
 const API_URL = 'http://localhost:3001';
 const SHIPPING_METHODS = [
@@ -20,6 +22,7 @@ export default function Checkout() {
   const location = useLocation();
   const navigate = useNavigate();
   const order = location.state?.order;
+  const { updateCartCount, updateCountImmediately } = useCart();
 
   // Thông tin form
   const [form, setForm] = useState({
@@ -28,9 +31,13 @@ export default function Checkout() {
     email: '',
     province: '',
     district: '',
+    ward: '',
     address: '',
     note: '',
   });
+  const [shippingAddresses, setShippingAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isNewAddress, setIsNewAddress] = useState(true);
   const [shipping, setShipping] = useState(SHIPPING_METHODS[0]);
   const [payment, setPayment] = useState(PAYMENT_METHODS[0]);
   const [voucherCode, setVoucherCode] = useState(order?.voucher || '');
@@ -40,13 +47,31 @@ export default function Checkout() {
   const [userVouchers, setUserVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [discount, setDiscount] = useState(0);
+  const [showAddressModal, setShowAddressModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+  const [formErrors, setFormErrors] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    province: '',
+    district: '',
+    ward: '',
+    address: '',
+  });
+  const [loading, setLoading] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderId, setOrderId] = useState(null);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
     fetchVouchers(user.id);
+    fetchShippingAddresses(user.id);
+    fetchProvinces();
   }, []);
 
   const fetchVouchers = async (userId) => {
@@ -70,6 +95,210 @@ export default function Checkout() {
     }
   };
 
+  const fetchShippingAddresses = async (userId) => {
+    try {
+      // First check if the user exists
+      const userResponse = await fetch(`${API_URL}/users/${userId}`);
+      if (!userResponse.ok) throw new Error('Failed to fetch user');
+      const user = await userResponse.json();
+      
+      // Use the addresses from the user object
+      const addresses = user.addresses || [];
+      setShippingAddresses(addresses);
+      
+      // Set default address if exists
+      const defaultAddress = addresses.find(addr => addr.isDefault);
+      if (defaultAddress) {
+        setSelectedAddressId(defaultAddress._id);
+        setForm(defaultAddress);
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+      setShippingAddresses([]);
+    }
+  };
+
+  const fetchProvinces = async () => {
+    try {
+      const response = await fetch(`${API_URL}/vietnam-addresses`);
+      if (!response.ok) throw new Error('Failed to fetch provinces');
+      const data = await response.json();
+      // Access the vietnam-addresses array from the response
+      setProvinces(data['vietnam-addresses'] || []);
+    } catch (error) {
+      console.error('Error fetching provinces:', error);
+      setProvinces([]);
+    }
+  };
+
+  const handleProvinceChange = (provinceId) => {
+    const selectedProvince = provinces.find(p => p.Id === provinceId);
+    if (selectedProvince) {
+      setDistricts(selectedProvince.Districts || []);
+      setWards([]); // Reset wards when province changes
+      setForm(prev => ({
+        ...prev,
+        province: selectedProvince.Name,
+        district: '', // Reset district when province changes
+        ward: '' // Reset ward when province changes
+      }));
+    }
+  };
+
+  const handleDistrictChange = (districtId) => {
+    const selectedDistrict = districts.find(d => d.Id === districtId);
+    if (selectedDistrict) {
+      setWards(selectedDistrict.Wards || []);
+      setForm(prev => ({
+        ...prev,
+        district: selectedDistrict.Name,
+        ward: '' // Reset ward when district changes
+      }));
+    }
+  };
+
+  const handleSaveAddress = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    try {
+      const addressData = {
+        ...form,
+        userId: user.id,
+        isDefault: shippingAddresses.length === 0 // Make first address default
+      };
+
+      if (isNewAddress) {
+        // Create new address by updating the user object
+        const response = await fetch(`${API_URL}/users/${user.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            addresses: [...shippingAddresses, addressData]
+          })
+        });
+        if (!response.ok) throw new Error('Failed to save address');
+        const updatedUser = await response.json();
+        setShippingAddresses(updatedUser.addresses || []);
+        setSelectedAddressId(addressData._id);
+      } else {
+        // Update existing address
+        const updatedAddresses = shippingAddresses.map(addr => 
+          addr._id === selectedAddressId ? addressData : addr
+        );
+        
+        const response = await fetch(`${API_URL}/users/${user.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            addresses: updatedAddresses
+          })
+        });
+        if (!response.ok) throw new Error('Failed to update address');
+        const updatedUser = await response.json();
+        setShippingAddresses(updatedUser.addresses || []);
+      }
+      setShowAddressModal(false);
+    } catch (error) {
+      console.error('Error saving address:', error);
+      alert('Có lỗi xảy ra khi lưu địa chỉ');
+    }
+  };
+
+  const handleSetDefaultAddress = async (addressId) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    try {
+      const updatedAddresses = shippingAddresses.map(addr => ({
+        ...addr,
+        isDefault: addr._id === addressId
+      }));
+
+      const response = await fetch(`${API_URL}/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          addresses: updatedAddresses
+        })
+      });
+      if (!response.ok) throw new Error('Failed to set default address');
+      
+      const updatedUser = await response.json();
+      setShippingAddresses(updatedUser.addresses || []);
+      setSelectedAddressId(addressId);
+    } catch (error) {
+      console.error('Error setting default address:', error);
+      alert('Có lỗi xảy ra khi đặt địa chỉ mặc định');
+    }
+  };
+
+  const handleDeleteAddress = async (addressId) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) return;
+
+    try {
+      const updatedAddresses = shippingAddresses.filter(addr => addr._id !== addressId);
+      
+      const response = await fetch(`${API_URL}/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          addresses: updatedAddresses
+        })
+      });
+      if (!response.ok) throw new Error('Failed to delete address');
+      
+      const updatedUser = await response.json();
+      setShippingAddresses(updatedUser.addresses || []);
+      
+      if (selectedAddressId === addressId) {
+        const remainingAddress = updatedAddresses[0];
+        if (remainingAddress) {
+          setSelectedAddressId(remainingAddress._id);
+          setForm(remainingAddress);
+        } else {
+          setSelectedAddressId(null);
+          setForm({
+            name: '',
+            phone: '',
+            email: '',
+            province: '',
+            district: '',
+            ward: '',
+            address: '',
+            note: '',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      alert('Có lỗi xảy ra khi xóa địa chỉ');
+    }
+  };
+
+  const handleEditAddress = (address) => {
+    setForm(address);
+    setSelectedAddressId(address._id);
+    setIsNewAddress(false);
+    setShowAddressModal(true);
+  };
+
+  const handleAddNewAddress = () => {
+    setForm({
+      name: '',
+      phone: '',
+      email: '',
+      province: '',
+      district: '',
+      address: '',
+      note: '',
+    });
+    setSelectedAddressId(null);
+    setIsNewAddress(true);
+    setShowAddressModal(true);
+  };
+
   // Tổng tiền sản phẩm
   const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   // Tổng thanh toán cuối cùng
@@ -79,7 +308,11 @@ export default function Checkout() {
   const handleApplyVoucher = async () => {
     setVoucherError('');
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) return;
+    if (!user) {
+      setVoucherError('Vui lòng đăng nhập để sử dụng voucher');
+      toast.error('Vui lòng đăng nhập để sử dụng voucher');
+      return;
+    }
     try {
       const response = await fetch(`${API_URL}/vouchers`);
       if (!response.ok) throw new Error('Failed to check voucher');
@@ -87,12 +320,14 @@ export default function Checkout() {
       const voucher = allVouchers.find(v => v.code === voucherCode.toUpperCase());
       if (!voucher) {
         setVoucherError('Mã giảm giá không tồn tại');
+        toast.error('Mã giảm giá không tồn tại');
         setAppliedVoucher(null);
         setDiscount(0);
         return;
       }
       if (voucher.userId && voucher.userId !== user.id) {
         setVoucherError('Bạn không có quyền sử dụng voucher này');
+        toast.error('Bạn không có quyền sử dụng voucher này');
         setAppliedVoucher(null);
         setDiscount(0);
         return;
@@ -102,54 +337,275 @@ export default function Checkout() {
       const endDate = new Date(voucher.endDate);
       if (currentDate < startDate) {
         setVoucherError('Mã giảm giá chưa có hiệu lực');
+        toast.error('Mã giảm giá chưa có hiệu lực');
         setAppliedVoucher(null);
         setDiscount(0);
         return;
       }
       if (currentDate > endDate) {
         setVoucherError('Mã giảm giá đã hết hạn');
+        toast.error('Mã giảm giá đã hết hạn');
         setAppliedVoucher(null);
         setDiscount(0);
         return;
       }
-      if (subtotal < voucher.minOrder) {
-        setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này`);
+      const orderTotal = subtotal + shipping.fee; // Tổng tiền đơn hàng bao gồm phí ship
+      if (orderTotal < voucher.minOrder) {
+        const remaining = voucher.minOrder - orderTotal;
+        setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+        toast.error(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
         setAppliedVoucher(null);
         setDiscount(0);
         return;
       }
       if (voucher.usedBy && voucher.usedBy.includes(user.id)) {
         setVoucherError('Bạn đã sử dụng mã giảm giá này');
+        toast.error('Bạn đã sử dụng mã giảm giá này');
         setAppliedVoucher(null);
         setDiscount(0);
         return;
       }
       setAppliedVoucher(voucher);
       setVoucherError('');
-      setDiscount(voucher.type === 'fixed' ? voucher.discount : (subtotal * voucher.discount) / 100);
+      setDiscount(voucher.type === 'fixed' ? voucher.discount : (orderTotal * voucher.discount) / 100);
+      toast.success('Áp dụng mã giảm giá thành công');
     } catch (error) {
       setVoucherError('Có lỗi xảy ra khi áp dụng mã giảm giá');
+      toast.error('Có lỗi xảy ra khi áp dụng mã giảm giá');
       setAppliedVoucher(null);
       setDiscount(0);
     }
   };
 
-  const handleSelectVoucher = (voucher) => {
+  const handleSelectVoucher = async (voucher) => {
     setVoucherCode(voucher.code);
     setShowVoucherModal(false);
     setVoucherError('');
+
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        setVoucherError('Vui lòng đăng nhập để sử dụng voucher');
+        toast.error('Vui lòng đăng nhập để sử dụng voucher');
+        return;
+      }
+
+      // Kiểm tra voucher có dành riêng cho user này không
+      if (voucher.userId && voucher.userId !== user.id) {
+        setVoucherError('Bạn không có quyền sử dụng voucher này');
+        toast.error('Bạn không có quyền sử dụng voucher này');
+        return;
+      }
+
+      // Check voucher expiration
+      const currentDate = new Date();
+      const startDate = new Date(voucher.startDate);
+      const endDate = new Date(voucher.endDate);
+
+      if (currentDate < startDate) {
+        setVoucherError('Mã giảm giá chưa có hiệu lực');
+        toast.error('Mã giảm giá chưa có hiệu lực');
+        return;
+      }
+
+      if (currentDate > endDate) {
+        setVoucherError('Mã giảm giá đã hết hạn');
+        toast.error('Mã giảm giá đã hết hạn');
+        return;
+      }
+
+      // Kiểm tra điều kiện đơn hàng tối thiểu
+      const orderTotal = subtotal + shipping.fee; // Tổng tiền đơn hàng bao gồm phí ship
+      if (orderTotal < voucher.minOrder) {
+        const remaining = voucher.minOrder - orderTotal;
+        setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+        toast.error(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+        return;
+      }
+
+      // Check if voucher has been used
+      if (voucher.usedBy && voucher.usedBy.includes(user.id)) {
+        setVoucherError('Bạn đã sử dụng mã giảm giá này');
+        toast.error('Bạn đã sử dụng mã giảm giá này');
+        return;
+      }
+
+      // If all checks pass, apply the voucher
+      setAppliedVoucher(voucher);
+      setVoucherError('');
+      setDiscount(voucher.type === 'fixed' ? voucher.discount : (orderTotal * voucher.discount) / 100);
+      toast.success('Áp dụng mã giảm giá thành công');
+    } catch (error) {
+      console.error('Error applying voucher:', error);
+      setVoucherError('Có lỗi xảy ra khi áp dụng mã giảm giá');
+      toast.error('Có lỗi xảy ra khi áp dụng mã giảm giá');
+    }
   };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
   };
 
-  const handlePlaceOrder = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      alert('Đặt hàng thành công!');
-      navigate('/');
-    }, 1200);
+  const formatDate = (date) => {
+    const options = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    };
+    return new Date(date).toLocaleString('vi-VN', options);
+  };
+
+  const validateForm = () => {
+    const errors = {};
+    let isValid = true;
+
+    // Validate name
+    if (!form.name.trim()) {
+      errors.name = 'Vui lòng nhập họ tên';
+      isValid = false;
+    }
+
+    // Validate phone
+    if (!form.phone.trim()) {
+      errors.phone = 'Vui lòng nhập số điện thoại';
+      isValid = false;
+    } else if (!/^[0-9]{10}$/.test(form.phone.trim())) {
+      errors.phone = 'Số điện thoại không hợp lệ';
+      isValid = false;
+    }
+
+    // Validate email
+    if (!form.email.trim()) {
+      errors.email = 'Vui lòng nhập email';
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errors.email = 'Email không hợp lệ';
+      isValid = false;
+    }
+
+    // Validate address fields
+    if (!form.province) {
+      errors.province = 'Vui lòng chọn tỉnh/thành phố';
+      isValid = false;
+    }
+    if (!form.district) {
+      errors.district = 'Vui lòng chọn quận/huyện';
+      isValid = false;
+    }
+    if (!form.ward) {
+      errors.ward = 'Vui lòng chọn phường/xã';
+      isValid = false;
+    }
+    if (!form.address.trim()) {
+      errors.address = 'Vui lòng nhập địa chỉ cụ thể';
+      isValid = false;
+    }
+
+    setFormErrors(errors);
+    return isValid;
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!validateForm()) return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để đặt hàng');
+      navigate('/login');
+      return;
+    }
+
+    // Kiểm tra xem đã có đơn hàng nào đang xử lý chưa
+    try {
+      const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
+      const existingOrders = await existingOrderResponse.json();
+      
+      if (existingOrders.length > 0) {
+        toast.error('Bạn đã có đơn hàng đang xử lý. Vui lòng đợi đơn hàng hiện tại hoàn thành.');
+        return;
+      }
+
+      setLoading(true);
+      const orderData = {
+        userId: user.id,
+        items: order.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          imageUrl: item.imageUrl
+        })),
+        total: total,
+        subtotal: subtotal,
+        shipping: {
+          method: shipping.value,
+          fee: shipping.fee,
+          address: {
+            name: form.name,
+            phone: form.phone,
+            email: form.email,
+            province: form.province,
+            district: form.district,
+            ward: form.ward,
+            address: form.address,
+            note: form.note
+          }
+        },
+        payment: {
+          method: payment.value,
+          status: 'completed'
+        },
+        voucher: appliedVoucher ? {
+          code: appliedVoucher.code,
+          discount: discount
+        } : null,
+        status: 'completed',
+        createdAt: formatDate(new Date())
+      };
+
+      console.log('Sending order data:', orderData);
+
+      // Lưu đơn hàng vào JSON server
+      const response = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (response.ok) {
+        const savedOrder = await response.json();
+        console.log('Order saved successfully:', savedOrder);
+        setOrderId(savedOrder.id);
+        setOrderSuccess(true);
+        
+        // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+        for (const itemId of order.items.map(item => item.id)) {
+          await fetch(`${API_URL}/cart/${itemId}?userId=${user.id}`, { method: 'DELETE' });
+        }
+        
+        // Cập nhật số lượng giỏ hàng ngay lập tức
+        updateCountImmediately(0);
+        toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
+        
+        // Chuyển hướng về trang chủ sau 2 giây
+        setTimeout(() => {
+          navigate('/');
+        }, 2000);
+      } else {
+        throw new Error('Failed to place order');
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error('Không thể đặt hàng. Vui lòng thử lại sau.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!order) {
@@ -173,7 +629,7 @@ export default function Checkout() {
         <div className="flex items-center justify-between relative">
           <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -z-10"></div>
           {[1, 2, 3, 4].map((step) => (
-            <div key={step} className="flex flex-col items-center">
+            <div key={`step-${step}`} className="flex flex-col items-center">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 activeStep >= step ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'
               }`}>
@@ -195,7 +651,7 @@ export default function Checkout() {
             <h3 className="text-xl font-semibold mb-4">Sản phẩm đã chọn</h3>
             <div className="space-y-4">
               {order.items.map(item => (
-                <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                <div key={`order-item-${item.id}`} className="flex items-center gap-4 p-4 border rounded-lg">
                   <img src={item.imageUrl} alt={item.name} className="w-20 h-20 object-cover rounded" />
                   <div className="flex-1">
                     <h4 className="font-medium">{item.name}</h4>
@@ -213,72 +669,93 @@ export default function Checkout() {
 
           {/* Shipping Information */}
           <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-xl font-semibold mb-4">Thông tin giao hàng</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                <input
-                  type="tel"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.phone}
-                  onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.email}
-                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.province}
-                  onChange={e => setForm(f => ({ ...f, province: e.target.value }))}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.district}
-                  onChange={e => setForm(f => ({ ...f, district: e.target.value }))}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ cụ thể</label>
-                <input
-                  type="text"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.address}
-                  onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                <textarea
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.note}
-                  onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-                  rows="3"
-                />
-              </div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Thông tin giao hàng</h3>
+              <button
+                onClick={handleAddNewAddress}
+                className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+              >
+                Thêm địa chỉ mới
+              </button>
             </div>
+            
+            {/* Address List */}
+            <div className="space-y-4 mb-4">
+              {shippingAddresses.map(address => (
+                <div
+                  key={`address-${address._id}`}
+                  className={`p-4 border rounded-lg ${
+                    selectedAddressId === address._id ? 'border-blue-500 bg-blue-50' : ''
+                  }`}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Họ tên:</span>
+                        <span>{address.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Số điện thoại:</span>
+                        <span>{address.phone}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Email:</span>
+                        <span>{address.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Địa chỉ:</span>
+                        <span>{`${address.address}, ${address.district}, ${address.province}`}</span>
+                      </div>
+                      {address.note && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">Ghi chú:</span>
+                          <span>{address.note}</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      {!address.isDefault && (
+                        <button
+                          onClick={() => handleSetDefaultAddress(address._id)}
+                          className="text-blue-600 hover:text-blue-700"
+                        >
+                          Đặt làm mặc định
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleEditAddress(address)}
+                        className="text-gray-600 hover:text-gray-700"
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        onClick={() => handleDeleteAddress(address._id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        Xóa
+                      </button>
+                    </div>
+                  </div>
+                  {address.isDefault && (
+                    <div className="mt-2 text-sm text-blue-600">
+                      Địa chỉ mặc định
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {shippingAddresses.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-red-500 mb-2">Bạn chưa có địa chỉ giao hàng nào</p>
+                <button
+                  onClick={handleAddNewAddress}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  Thêm địa chỉ ngay
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Shipping Method */}
@@ -287,7 +764,7 @@ export default function Checkout() {
             <div className="space-y-4">
               {SHIPPING_METHODS.map(method => (
                 <label
-                  key={method.value}
+                  key={`shipping-${method.value}`}
                   className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
                     shipping.value === method.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
                   }`}
@@ -320,7 +797,7 @@ export default function Checkout() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {PAYMENT_METHODS.map(method => (
                 <label
-                  key={method.value}
+                  key={`payment-${method.value}`}
                   className={`flex items-center gap-4 p-4 border rounded-lg cursor-pointer transition-colors ${
                     payment.value === method.value ? 'border-blue-500 bg-blue-50' : 'hover:bg-gray-50'
                   }`}
@@ -355,6 +832,11 @@ export default function Checkout() {
                   onChange={e => {
                     setVoucherCode(e.target.value);
                     setVoucherError('');
+                  }}
+                  onKeyPress={e => {
+                    if (e.key === 'Enter') {
+                      handleApplyVoucher();
+                    }
                   }}
                   className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
@@ -412,9 +894,9 @@ export default function Checkout() {
             <button
               className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
               onClick={handlePlaceOrder}
-              disabled={isSubmitting}
+              disabled={isSubmitting || shippingAddresses.length === 0}
             >
-              {isSubmitting ? 'Đang xử lý...' : 'Đặt hàng'}
+              {isSubmitting ? 'Đang xử lý...' : shippingAddresses.length === 0 ? 'Vui lòng thêm địa chỉ giao hàng' : 'Đặt hàng'}
             </button>
           </div>
         </div>
@@ -437,7 +919,7 @@ export default function Checkout() {
               {userVouchers.length > 0 ? (
                 userVouchers.map((voucher) => (
                   <div
-                    key={voucher.id}
+                    key={`voucher-${voucher.id}`}
                     className="p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleSelectVoucher(voucher)}
                   >
@@ -460,7 +942,7 @@ export default function Checkout() {
                       </div>
                     </div>
                     <div className="text-xs text-gray-400 mt-2">
-                      HSD: {new Date(voucher.endDate).toLocaleDateString('vi-VN')}
+                      HSD: {formatDate(voucher.endDate)}
                     </div>
                   </div>
                 ))
@@ -469,6 +951,192 @@ export default function Checkout() {
                   Bạn chưa có voucher nào
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Address Modal */}
+      {showAddressModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">
+                {isNewAddress ? 'Thêm địa chỉ mới' : 'Chỉnh sửa địa chỉ'}
+              </h2>
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên *</label>
+                <input
+                  type="text"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.name ? 'border-red-500' : ''
+                  }`}
+                  value={form.name}
+                  onChange={e => {
+                    setForm(f => ({ ...f, name: e.target.value }));
+                    setFormErrors(prev => ({ ...prev, name: '' }));
+                  }}
+                />
+                {formErrors.name && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại *</label>
+                <input
+                  type="tel"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.phone ? 'border-red-500' : ''
+                  }`}
+                  value={form.phone}
+                  onChange={e => {
+                    setForm(f => ({ ...f, phone: e.target.value }));
+                    setFormErrors(prev => ({ ...prev, phone: '' }));
+                  }}
+                />
+                {formErrors.phone && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.phone}</p>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                <input
+                  type="email"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.email ? 'border-red-500' : ''
+                  }`}
+                  value={form.email}
+                  onChange={e => {
+                    setForm(f => ({ ...f, email: e.target.value }));
+                    setFormErrors(prev => ({ ...prev, email: '' }));
+                  }}
+                />
+                {formErrors.email && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố *</label>
+                <select
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.province ? 'border-red-500' : ''
+                  }`}
+                  value={Array.isArray(provinces) && provinces.find(p => p.Name === form.province)?.Id || ''}
+                  onChange={(e) => {
+                    handleProvinceChange(e.target.value);
+                    setFormErrors(prev => ({ ...prev, province: '' }));
+                  }}
+                >
+                  <option value="">Chọn tỉnh/thành phố</option>
+                  {Array.isArray(provinces) && provinces.map(province => (
+                    <option key={province.Id} value={province.Id}>
+                      {province.Name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.province && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.province}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện *</label>
+                <select
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.district ? 'border-red-500' : ''
+                  }`}
+                  value={Array.isArray(districts) && districts.find(d => d.Name === form.district)?.Id || ''}
+                  onChange={(e) => {
+                    handleDistrictChange(e.target.value);
+                    setFormErrors(prev => ({ ...prev, district: '' }));
+                  }}
+                  disabled={!form.province}
+                >
+                  <option value="">Chọn quận/huyện</option>
+                  {Array.isArray(districts) && districts.map(district => (
+                    <option key={district.Id} value={district.Id}>
+                      {district.Name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.district && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.district}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phường/Xã *</label>
+                <select
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.ward ? 'border-red-500' : ''
+                  }`}
+                  value={Array.isArray(wards) && wards.find(w => w.Name === form.ward)?.Id || ''}
+                  onChange={(e) => {
+                    const selectedWard = Array.isArray(wards) && wards.find(w => w.Id === e.target.value);
+                    if (selectedWard) {
+                      setForm(prev => ({ ...prev, ward: selectedWard.Name }));
+                      setFormErrors(prev => ({ ...prev, ward: '' }));
+                    }
+                  }}
+                  disabled={!form.district}
+                >
+                  <option value="">Chọn phường/xã</option>
+                  {Array.isArray(wards) && wards.map(ward => (
+                    <option key={ward.Id} value={ward.Id}>
+                      {ward.Name}
+                    </option>
+                  ))}
+                </select>
+                {formErrors.ward && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.ward}</p>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ cụ thể *</label>
+                <input
+                  type="text"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    formErrors.address ? 'border-red-500' : ''
+                  }`}
+                  value={form.address}
+                  onChange={e => {
+                    setForm(f => ({ ...f, address: e.target.value }));
+                    setFormErrors(prev => ({ ...prev, address: '' }));
+                  }}
+                />
+                {formErrors.address && (
+                  <p className="mt-1 text-sm text-red-500">{formErrors.address}</p>
+                )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
+                <textarea
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={form.note}
+                  onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+                  rows="3"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-4">
+              <button
+                onClick={() => setShowAddressModal(false)}
+                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveAddress}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                {isNewAddress ? 'Thêm địa chỉ' : 'Lưu thay đổi'}
+              </button>
             </div>
           </div>
         </div>
