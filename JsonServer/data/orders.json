@@ -1659,7 +1659,15 @@
       "total": 330000,
       "voucher": null,
       "createdAt": "2025-05-06T08:48:12.403Z",
-      "id": 42
+      "id": 42,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "21:35 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
     },
     {
       "userId": 8,
@@ -1698,7 +1706,15 @@
       "total": 620000,
       "voucher": null,
       "createdAt": "2025-05-06T08:49:06.351Z",
-      "id": 43
+      "id": 43,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "21:35 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
     },
     {
       "userId": 8,
@@ -1722,7 +1738,15 @@
       "total": 330000,
       "voucher": null,
       "createdAt": "2025-05-06T08:53:00.483Z",
-      "id": 44
+      "id": 44,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "21:35 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
     },
     {
       "userId": 8,
@@ -1746,7 +1770,84 @@
       "total": 330000,
       "voucher": null,
       "createdAt": "2025-05-06T08:53:11.990Z",
-      "id": 45
+      "id": 45,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "21:35 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 7,
+          "sizes": {
+            "size": "M",
+            "stock": 6
+          },
+          "userId": 8,
+          "id": 6
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-06T14:29:10.023Z",
+      "id": 46,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "pending",
+          "timestamp": "21:35 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 2,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 8,
+          "id": 7
+        }
+      ],
+      "total": 630000,
+      "voucher": null,
+      "createdAt": "2025-05-06T14:37:32.439Z",
+      "id": 47,
+      "status": "pending",
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "21:39 06/05/2025",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "pending",
+          "timestamp": "21:39 06/05/2025",
+          "note": "Status changed to pending"
+        }
+      ]
     }
   ]
 }

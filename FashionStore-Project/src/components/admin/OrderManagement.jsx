@@ -38,7 +38,13 @@ const OrderManagement = () => {
         throw new Error('Failed to fetch orders');
       }
       const data = await response.json();
-      setOrders(data.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+      // Sort orders by date in descending order (newest first)
+      const sortedOrders = data.sort((a, b) => {
+        const dateA = new Date(a.createdAt || a.date);
+        const dateB = new Date(b.createdAt || b.date);
+        return dateB - dateA;
+      });
+      setOrders(sortedOrders);
     } catch (error) {
       console.error('Error loading orders:', error);
       message.error('Failed to load orders');
@@ -232,7 +238,7 @@ const OrderManagement = () => {
             View Details
           </Button>
           <Select
-            defaultValue={record.status}
+            value={record.status || 'pending'}
             style={{ width: 120 }}
             onChange={(value) => handleStatusChange(record.id, value)}
           >
@@ -293,7 +299,12 @@ const OrderManagement = () => {
           dataSource={filteredOrders}
           rowKey="id"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ 
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+            pageSizeOptions: ['10', '20', '50', '100']
+          }}
           scroll={{ x: 1200 }}
           size="middle"
           bordered

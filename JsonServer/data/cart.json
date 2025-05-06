@@ -49,16 +49,16 @@
       "productId": 2,
       "name": "Slim Fit Jeans",
       "price": 300000,
-      "quantity": 1,
+      "quantity": 2,
       "size": "M",
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
-      "stock": 15,
+      "stock": 75,
       "sizes": {
         "size": "M",
-        "stock": 14
+        "stock": 74
       },
       "userId": 8,
-      "id": 6
+      "id": 7
     }
   ]
 }
