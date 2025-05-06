@@ -322,8 +322,8 @@ const ProductManager = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="mb-6 shadow-md">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-          <Title level={3} className="m-0">Product Management</Title>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <Title level={3} className="m-0 text-center md:text-left">Product Management</Title>
           <Button
             type="primary"
             icon={<PlusOutlined />}
