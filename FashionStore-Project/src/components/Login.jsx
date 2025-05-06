@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUser, FaLock } from 'react-icons/fa';
+import { FaUser, FaLock, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { App } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { message: messageApi } = App.useApp();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,6 +32,45 @@ const Login = () => {
           role: user.role
         }));
 
+        // Show center notification
+        messageApi.success({
+          content: (
+            <div className="flex items-center">
+              <FaCheckCircle className="text-2xl mr-2 text-green-500" />
+              <div>
+                <div className="font-semibold">Welcome back, {user.name || user.username}!</div>
+                <div className="text-sm text-gray-500">You have successfully logged in.</div>
+              </div>
+            </div>
+          ),
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          duration: 3,
+          style: {
+            marginTop: '20vh',
+          },
+        });
+
+        // Show top notification
+        messageApi.success({
+          content: (
+            <div className="flex items-center">
+              <FaCheckCircle className="text-2xl mr-2 text-green-500" />
+              <div>
+                <div className="font-semibold">Login Successful!</div>
+                <div className="text-sm text-gray-500">Redirecting to {user.role === 'admin' ? 'admin dashboard' : 'home page'}...</div>
+              </div>
+            </div>
+          ),
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          duration: 2,
+          style: {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+          },
+        });
+
         // Redirect based on role
         if (user.role === 'admin') {
           navigate('/admin');
@@ -37,9 +79,83 @@ const Login = () => {
         }
       } else {
         setError('Invalid username or password');
+        messageApi.error({
+          content: (
+            <div className="flex items-center">
+              <FaTimesCircle className="text-2xl mr-2 text-red-500" />
+              <div>
+                <div className="font-semibold">Login Failed</div>
+                <div className="text-sm text-gray-500">Invalid username or password.</div>
+              </div>
+            </div>
+          ),
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+          style: {
+            marginTop: '20vh',
+          },
+        });
+
+        // Show top error notification
+        messageApi.error({
+          content: (
+            <div className="flex items-center">
+              <FaTimesCircle className="text-2xl mr-2 text-red-500" />
+              <div>
+                <div className="font-semibold">Login Failed</div>
+                <div className="text-sm text-gray-500">Please check your credentials and try again.</div>
+              </div>
+            </div>
+          ),
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 2,
+          style: {
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 1000,
+          },
+        });
       }
     } catch {
       setError('Error logging in. Please try again.');
+      messageApi.error({
+        content: (
+          <div className="flex items-center">
+            <FaTimesCircle className="text-2xl mr-2 text-red-500" />
+            <div>
+              <div className="font-semibold">Connection Error</div>
+              <div className="text-sm text-gray-500">Unable to connect to the server.</div>
+            </div>
+          </div>
+        ),
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+        style: {
+          marginTop: '20vh',
+        },
+      });
+
+      // Show top error notification
+      messageApi.error({
+        content: (
+          <div className="flex items-center">
+            <FaTimesCircle className="text-2xl mr-2 text-red-500" />
+            <div>
+              <div className="font-semibold">Connection Error</div>
+              <div className="text-sm text-gray-500">Please check your internet connection.</div>
+            </div>
+          </div>
+        ),
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 2,
+        style: {
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 1000,
+        },
+      });
     }
   };
 

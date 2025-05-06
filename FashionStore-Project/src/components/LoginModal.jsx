@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaTimes } from 'react-icons/fa';
+import { FcGoogle } from 'react-icons/fc';
+import { FaFacebook } from 'react-icons/fa';
+import { useGoogleLogin } from '@react-oauth/google';
+import { App } from 'antd';
+import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
 
 const LoginModal = ({ onClose, onLogin }) => {
   const navigate = useNavigate();
+  const { message: messageApi } = App.useApp();
   const [rightPanelActive, setRightPanelActive] = useState(false);
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
     password: '',
     full_name: '',
-    role: 'user' // Default role for new users
+    role: 'user'
   });
 
   const [signinData, setSigninData] = useState({
@@ -20,12 +26,15 @@ const LoginModal = ({ onClose, onLogin }) => {
 
   const handleSignUp = async () => {
     try {
-      // First check if user already exists
       const checkResponse = await fetch(`http://localhost:3001/users?username=${signupData.username}`);
       const existingUsers = await checkResponse.json();
 
       if (existingUsers.length > 0) {
-        alert('Username already exists!');
+        messageApi.error({
+          content: 'Username already exists!',
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+        });
         return;
       }
 
@@ -36,9 +45,12 @@ const LoginModal = ({ onClose, onLogin }) => {
       });
 
       if (response.ok) {
-        alert('Registration successful!');
-        setRightPanelActive(false); // Switch to sign in form
-        // Clear the form
+        messageApi.success({
+          content: 'Registration successful!',
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          duration: 3,
+        });
+        setRightPanelActive(false);
         setSignupData({
           username: '',
           email: '',
@@ -47,11 +59,19 @@ const LoginModal = ({ onClose, onLogin }) => {
           role: 'user'
         });
       } else {
-        alert('Registration failed. Please try again.');
+        messageApi.error({
+          content: 'Registration failed. Please try again.',
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+        });
       }
     } catch (err) {
       console.error('Signup error:', err);
-      alert('Server connection error');
+      messageApi.error({
+        content: 'Server connection error',
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+      });
     }
   };
 
@@ -62,9 +82,26 @@ const LoginModal = ({ onClose, onLogin }) => {
       const user = users.find(u => u.username === signinData.username && u.password === signinData.password);
 
       if (user) {
-        alert('Login successful!');
+        messageApi.success({
+          content: (
+            <div className="flex items-center">
+              <UserOutlined className="text-2xl mr-2 text-green-500" />
+              <div>
+                <div className="font-semibold">Welcome back, {user.full_name || user.username}!</div>
+                <div className="text-sm text-gray-500">You have successfully logged in.</div>
+              </div>
+            </div>
+          ),
+          icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+          duration: 3,
+          style: {
+            marginTop: '20vh',
+          },
+        });
         localStorage.setItem('user', JSON.stringify(user));
-        onLogin(user);
+        if (typeof onLogin === 'function') {
+          onLogin(user);
+        }
         onClose();
         if (user.role === 'admin') {
           navigate('/admin');
@@ -72,12 +109,223 @@ const LoginModal = ({ onClose, onLogin }) => {
           navigate('/products');
         }
       } else {
-        alert('Invalid username or password');
+        messageApi.error({
+          content: (
+            <div className="flex items-center">
+              <CloseCircleOutlined className="text-2xl mr-2 text-red-500" />
+              <div>
+                <div className="font-semibold">Login Failed</div>
+                <div className="text-sm text-gray-500">Invalid username or password.</div>
+              </div>
+            </div>
+          ),
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+          style: {
+            marginTop: '20vh',
+          },
+        });
       }
     } catch (err) {
       console.error('Signin error:', err);
-      alert('Server connection error');
+      messageApi.error({
+        content: (
+          <div className="flex items-center">
+            <CloseCircleOutlined className="text-2xl mr-2 text-red-500" />
+            <div>
+              <div className="font-semibold">Connection Error</div>
+              <div className="text-sm text-gray-500">Unable to connect to the server.</div>
+            </div>
+          </div>
+        ),
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+        style: {
+          marginTop: '20vh',
+        },
+      });
     }
+  };
+
+  const handleGoogleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        
+        if (!userInfoResponse.ok) {
+          throw new Error('Failed to get user info from Google');
+        }
+        
+        const userInfo = await userInfoResponse.json();
+        console.log('Google user info:', userInfo);
+        
+        const checkResponse = await fetch(`http://localhost:3001/users?email=${userInfo.email}`);
+        const existingUsers = await checkResponse.json();
+        
+        if (existingUsers.length > 0) {
+          const user = existingUsers[0];
+          if (userInfo.picture && (!user.imageUrl || user.imageUrl === "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg")) {
+            const updatedUser = {
+              ...user,
+              imageUrl: userInfo.picture,
+              google_id: userInfo.sub
+            };
+            
+            await fetch(`http://localhost:3001/users/${user.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updatedUser),
+            });
+            
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            if (typeof onLogin === 'function') {
+              onLogin(updatedUser);
+            }
+          } else {
+            localStorage.setItem('user', JSON.stringify(user));
+            if (typeof onLogin === 'function') {
+              onLogin(user);
+            }
+          }
+          
+          messageApi.success({
+            content: (
+              <div className="flex items-center">
+                <UserOutlined className="text-2xl mr-2 text-green-500" />
+                <div>
+                  <div className="font-semibold">Welcome back, {user.full_name || user.username}!</div>
+                  <div className="text-sm text-gray-500">You have successfully logged in with Google.</div>
+                </div>
+              </div>
+            ),
+            icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+            duration: 3,
+            style: {
+              marginTop: '20vh',
+            },
+          });
+          
+          onClose();
+          if (user.role === 'admin') {
+            navigate('/admin');
+          } else {
+            navigate('/products');
+          }
+        } else {
+          const newUser = {
+            username: userInfo.email.split('@')[0],
+            email: userInfo.email,
+            password: 'google-oauth',
+            full_name: userInfo.name,
+            name: userInfo.name,
+            role: 'user',
+            google_id: userInfo.sub,
+            imageUrl: userInfo.picture || "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744696489/293856112_700167161082539_6334980016010373075_n_po8xll.jpg",
+            dateCreate: new Date().toISOString(),
+            address: "Not provided",
+            birthday: "Not provided",
+            phoneNumber: "Not provided"
+          };
+          
+          const createResponse = await fetch('http://localhost:3001/users', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newUser),
+          });
+          
+          if (createResponse.ok) {
+            const createdUser = await createResponse.json();
+            console.log('Created user:', createdUser);
+            
+            localStorage.setItem('user', JSON.stringify(createdUser));
+            if (typeof onLogin === 'function') {
+              onLogin(createdUser);
+            }
+            
+            messageApi.success({
+              content: (
+                <div className="flex items-center">
+                  <UserOutlined className="text-2xl mr-2 text-green-500" />
+                  <div>
+                    <div className="font-semibold">Welcome, {createdUser.full_name || createdUser.username}!</div>
+                    <div className="text-sm text-gray-500">Your account has been created successfully.</div>
+                  </div>
+                </div>
+              ),
+              icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+              duration: 3,
+              style: {
+                marginTop: '20vh',
+              },
+            });
+            
+            onClose();
+            navigate('/products');
+          } else {
+            console.error('Failed to create user:', await createResponse.text());
+            messageApi.error({
+              content: (
+                <div className="flex items-center">
+                  <CloseCircleOutlined className="text-2xl mr-2 text-red-500" />
+                  <div>
+                    <div className="font-semibold">Account Creation Failed</div>
+                    <div className="text-sm text-gray-500">Unable to create account with Google.</div>
+                  </div>
+                </div>
+              ),
+              icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+              duration: 3,
+              style: {
+                marginTop: '20vh',
+              },
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Google login error:', error);
+        messageApi.error({
+          content: (
+            <div className="flex items-center">
+              <CloseCircleOutlined className="text-2xl mr-2 text-red-500" />
+              <div>
+                <div className="font-semibold">Google Login Error</div>
+                <div className="text-sm text-gray-500">Unable to login with Google.</div>
+              </div>
+            </div>
+          ),
+          icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+          duration: 3,
+          style: {
+            marginTop: '20vh',
+          },
+        });
+      }
+    },
+    onError: () => {
+      messageApi.error({
+        content: (
+          <div className="flex items-center">
+            <CloseCircleOutlined className="text-2xl mr-2 text-red-500" />
+            <div>
+              <div className="font-semibold">Google Login Failed</div>
+              <div className="text-sm text-gray-500">Please try again later.</div>
+            </div>
+          </div>
+        ),
+        icon: <CloseCircleOutlined style={{ color: '#ff4d4f' }} />,
+        duration: 3,
+        style: {
+          marginTop: '20vh',
+        },
+      });
+    }
+  });
+
+  const handleFacebookLogin = () => {
+    // TODO: Implement Facebook login
+    console.log('Facebook login clicked');
   };
 
   return (
@@ -136,6 +384,26 @@ const LoginModal = ({ onClose, onLogin }) => {
             >
               Sign Up
             </button>
+
+            {/* Social Login Buttons */}
+            <div className="w-full flex flex-row justify-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FcGoogle className="text-xl" />
+                <span className="text-gray-700 text-sm">Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleFacebookLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FaFacebook className="text-xl text-blue-600" />
+                <span className="text-gray-700 text-sm">Facebook</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -159,12 +427,37 @@ const LoginModal = ({ onClose, onLogin }) => {
               className="w-full p-3 my-2 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
               required
             />
+            <div className="w-full text-right">
+              <a href="#" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+                Quên mật khẩu?
+              </a>
+            </div>
             <button
               type="submit"
               className="rounded-full border border-gray-700 bg-gray-700 text-white text-xs font-medium py-3 px-11 my-3 uppercase tracking-wider transition-all duration-300 hover:bg-gray-800 active:scale-95 focus:outline-none hover:cursor-pointer"
             >
               Sign In
             </button>
+
+            {/* Social Login Buttons */}
+            <div className="w-full flex flex-row justify-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FcGoogle className="text-xl" />
+                <span className="text-gray-700 text-sm">Google</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleFacebookLogin}
+                className="flex-1 flex items-center justify-center gap-2 py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+              >
+                <FaFacebook className="text-xl text-blue-600" />
+                <span className="text-gray-700 text-sm">Facebook</span>
+              </button>
+            </div>
           </form>
         </div>
 
@@ -201,4 +494,12 @@ const LoginModal = ({ onClose, onLogin }) => {
   );
 };
 
-export default LoginModal; 
+const LoginModalWithApp = ({ onClose, onLogin }) => {
+  return (
+    <App>
+      <LoginModal onClose={onClose} onLogin={onLogin} />
+    </App>
+  );
+};
+
+export default LoginModalWithApp; 
