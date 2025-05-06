@@ -367,7 +367,7 @@ const ProductManager = () => {
         footer={null}
         width="95%"
         style={{ maxWidth: '800px' }}
-        destroyOnClose
+        destroyOnClose={false}
         className="product-form-modal"
       >
         <Form
@@ -383,7 +383,7 @@ const ProductManager = () => {
               form.submit();
             }
           }}
-          preserve={false}
+          preserve={true}
           className="w-full"
         >
           <Form.Item
@@ -465,13 +465,17 @@ const ProductManager = () => {
                         rules={[{ required: true, message: 'Missing size' }]}
                       >
                         <Select placeholder="Select size">
-                          <Option value="S">S</Option>
-                          <Option value="M">M</Option>
-                          <Option value="L">L</Option>
-                          <Option value="XL">XL</Option>
-                          <Option value="XXL">XXL</Option>
-                          <Option value="XXXL">XXXL</Option>
-                          <Option value="XXXXL">XXXXL</Option>
+                          {['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'XXXXL'].map(size => {
+                            const currentSizes = form.getFieldValue('sizes') || [];
+                            const isSizeExists = currentSizes.some((s, index) => 
+                              s && s.size === size && index !== name
+                            );
+                            return (
+                              <Option key={size} value={size} disabled={isSizeExists}>
+                                {size}
+                              </Option>
+                            );
+                          })}
                         </Select>
                       </Form.Item>
                     </Col>

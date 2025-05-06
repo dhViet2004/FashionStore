@@ -1835,7 +1835,7 @@
       "voucher": null,
       "createdAt": "2025-05-06T14:37:32.439Z",
       "id": 47,
-      "status": "pending",
+      "status": "confirmed",
       "statusHistory": [
         {
           "status": "confirmed",
@@ -1846,6 +1846,11 @@
           "status": "pending",
           "timestamp": "21:39 06/05/2025",
           "note": "Status changed to pending"
+        },
+        {
+          "status": "confirmed",
+          "timestamp": "22:55 06/05/2025",
+          "note": "Status changed to confirmed"
         }
       ]
     }
