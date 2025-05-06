@@ -1253,7 +1253,7 @@
       "id": 38
     },
     {
-      "userId": 7,
+      "userId": 10,
       "items": [
         {
           "productId": 3,
@@ -1267,17 +1267,17 @@
             "size": "M",
             "stock": 28
           },
-          "userId": 7,
+          "userId": 10,
           "id": 2
         }
       ],
       "total": 320000,
       "voucher": null,
-      "createdAt": "2025-05-06T05:23:53.565Z",
+      "createdAt": "2025-05-06T05:58:31.273Z",
       "id": 39
     },
     {
-      "userId": 7,
+      "userId": 10,
       "items": [
         {
           "id": 2,
@@ -1294,24 +1294,722 @@
         "method": "standard",
         "fee": 30000,
         "address": {
-          "name": "Đặng Hoàng Việt",
-          "phone": "0364601530",
-          "email": "dviet037@gmail.com",
-          "province": "Tỉnh Bến Tre",
-          "district": "Huyện Mỏ Cày Nam",
-          "ward": "Thị trấn Mỏ Cày",
-          "address": "71 Lê Lợi",
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
           "note": ""
         }
       },
       "payment": {
         "method": "cod",
-        "status": "completed"
+        "status": "Pending"
       },
       "voucher": null,
-      "status": "completed",
-      "createdAt": "12:24 06/05/2025",
+      "status": "pending",
+      "createdAt": "12:58 06/05/2025",
       "id": 40
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 7,
+          "sizes": {
+            "size": "M",
+            "stock": 6
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:15:31.703Z",
+      "id": 41
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        },
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 2,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 910000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:25:14.096Z",
+      "id": 42
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        },
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 2,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 910000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:26:48.292Z",
+      "id": 43
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 2,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 610000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:28:17.604Z",
+      "id": 44
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 330000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:29:08.413Z",
+      "id": 45
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        },
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 2,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 910000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:29:19.080Z",
+      "id": 46
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 330000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:30:21.678Z",
+      "id": 47
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        },
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 620000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:31:54.751Z",
+      "id": 48
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg"
+        },
+        {
+          "id": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 620000,
+      "subtotal": 590000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "delivered",
+      "createdAt": "13:33 06/05/2025",
+      "id": 49,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "2025-05-06T06:42:16.013Z",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "2025-05-06T06:42:21.230Z",
+          "note": "Status changed to delivered"
+        }
+      ]
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg"
+        },
+        {
+          "id": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 620000,
+      "subtotal": 590000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "delivered",
+      "createdAt": "13:33 06/05/2025",
+      "id": 50,
+      "statusHistory": [
+        {
+          "status": "delivered",
+          "timestamp": "2025-05-06T06:42:18.907Z",
+          "note": "Status changed to delivered"
+        }
+      ]
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg"
+        },
+        {
+          "id": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 620000,
+      "subtotal": 590000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "delivered",
+      "createdAt": "13:34 06/05/2025",
+      "id": 51,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "2025-05-06T06:42:11.664Z",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "2025-05-06T06:42:23.512Z",
+          "note": "Status changed to delivered"
+        }
+      ]
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 15,
+          "sizes": {
+            "size": "M",
+            "stock": 14
+          },
+          "userId": 10,
+          "id": 3
+        }
+      ],
+      "total": 330000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:36:58.599Z",
+      "id": 52
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 3,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg"
+        }
+      ],
+      "total": 330000,
+      "subtotal": 300000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "delivered",
+      "createdAt": "13:37 06/05/2025",
+      "id": 53,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "2025-05-06T06:42:09.265Z",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "2025-05-06T06:42:25.770Z",
+          "note": "Status changed to delivered"
+        }
+      ]
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 7,
+          "sizes": {
+            "size": "M",
+            "stock": 6
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:43:11.372Z",
+      "id": 54
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 320000,
+      "subtotal": 290000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "pending",
+      "createdAt": "13:43 06/05/2025",
+      "id": 55
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 29,
+          "sizes": {
+            "size": "M",
+            "stock": 28
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:43:32.741Z",
+      "id": 56
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 320000,
+      "subtotal": 290000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "pending",
+      "createdAt": "13:43 06/05/2025",
+      "id": 57
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 3,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+          "stock": 7,
+          "sizes": {
+            "size": "M",
+            "stock": 6
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 320000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:49:08.665Z",
+      "id": 58
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "id": 2,
+          "name": "Leather Jacket",
+          "price": 290000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg"
+        }
+      ],
+      "total": 320000,
+      "subtotal": 290000,
+      "shipping": {
+        "method": "standard",
+        "fee": 30000,
+        "address": {
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
+          "note": ""
+        }
+      },
+      "payment": {
+        "method": "cod",
+        "status": "Pending"
+      },
+      "voucher": null,
+      "status": "pending",
+      "createdAt": "13:49 06/05/2025",
+      "id": 59
+    },
+    {
+      "userId": 10,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 75,
+          "sizes": {
+            "size": "M",
+            "stock": 74
+          },
+          "userId": 10,
+          "id": 2
+        }
+      ],
+      "total": 330000,
+      "voucher": null,
+      "createdAt": "2025-05-06T06:52:56.708Z",
+      "id": 60
     }
   ]
 }

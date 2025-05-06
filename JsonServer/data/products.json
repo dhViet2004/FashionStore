@@ -415,23 +415,6 @@
       "rating": 0,
       "reviews": 0,
       "id": 19
-    },
-    {
-      "name": "Áo thun nữ màu trắng",
-      "category": "T-Shirts",
-      "price": 500000,
-      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1746459606/vn-11134207-7ra0g-m81f5vrwlojmcb_s3hbol.webp",
-      "description": "xinh đẹp",
-      "sizes": [
-        {
-          "size": "M",
-          "stock": 12
-        }
-      ],
-      "stock": 12,
-      "rating": 0,
-      "reviews": 0,
-      "id": 20
     }
   ]
 }
