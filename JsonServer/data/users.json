@@ -48,7 +48,21 @@
       "google_id": "114249137217624289558",
       "id": 7,
       "imageUrl": "https://lh3.googleusercontent.com/a/ACg8ocJUIbTQbw55fnDI0jkY_eRcUKEeH-Qlwq4uX6-877ZzLZzLXD8=s96-c",
-      "name": "Đặng Hoàng Việt"
+      "name": "Đặng Hoàng Việt",
+      "addresses": [
+        {
+          "name": "Đặng Hoàng Việt",
+          "phone": "0364601530",
+          "email": "dviet037@gmail.com",
+          "province": "Tỉnh Bến Tre",
+          "district": "Huyện Mỏ Cày Nam",
+          "address": "71 Lê Lợi",
+          "note": "",
+          "ward": "Thị trấn Mỏ Cày",
+          "userId": 7,
+          "isDefault": true
+        }
+      ]
     },
     {
       "username": "dhoangviet1612",
