@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
+import { useCart } from '../hooks/useCart'
 
 const API_URL = 'http://localhost:3001'
 
@@ -17,6 +18,7 @@ export default function Cart() {
   const [voucherError, setVoucherError] = useState('')
   const [showVoucherModal, setShowVoucherModal] = useState(false)
   const navigate = useNavigate()
+  const { updateCartCount, updateCountImmediately } = useCart()
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'))
@@ -113,6 +115,7 @@ export default function Cart() {
             item.id === itemId ? { ...item, quantity: newQuantity } : item
           )
         )
+        updateCartCount()
         toast.success('Cập nhật số lượng thành công')
       }
     } catch (error) {
@@ -135,8 +138,12 @@ export default function Cart() {
       })
 
       if (response.ok) {
-        setCartItems(prevItems => prevItems.filter(item => item.id !== itemId))
-        setSelectedItems(prev => prev.filter(id => id !== itemId))
+        setCartItems(prevItems => {
+          const newItems = prevItems.filter(item => item.id !== itemId);
+          updateCountImmediately(newItems.length);
+          return newItems;
+        });
+        setSelectedItems(prev => prev.filter(id => id !== itemId));
         toast.success('Xóa sản phẩm thành công')
       }
     } catch (error) {
@@ -224,16 +231,13 @@ export default function Cart() {
         return
       }
 
-      // Convert subtotal to VND if needed
-      const subtotalInVND = subtotal * 1000 // Assuming price is in thousands of VND
-      console.log('Subtotal in VND:', subtotalInVND)
-      console.log('Minimum order required:', voucher.minOrder)
-
-      if (subtotalInVND < voucher.minOrder) {
-        const remaining = voucher.minOrder - subtotalInVND
-        setVoucherError(`Bạn cần mua thêm ${formatCurrency(remaining)} để áp dụng mã này`)
-        toast.error(`Bạn cần mua thêm ${formatCurrency(remaining)} để áp dụng mã này`)
-        return
+      // Kiểm tra điều kiện đơn hàng tối thiểu
+      const orderTotal = subtotal + shipping; // Tổng tiền đơn hàng bao gồm phí ship
+      if (orderTotal < voucher.minOrder) {
+        const remaining = voucher.minOrder - orderTotal;
+        setVoucherError(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+        toast.error(`Đơn hàng tối thiểu ${formatCurrency(voucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+        return;
       }
 
       // Check if voucher has been used
@@ -246,6 +250,7 @@ export default function Cart() {
       // If all checks pass, apply the voucher
       setAppliedVoucher(voucher)
       setVoucherError('')
+      setDiscount(voucher.type === 'fixed' ? voucher.discount : (orderTotal * voucher.discount) / 100)
       toast.success('Áp dụng mã giảm giá thành công')
     } catch (error) {
       console.error('Error applying voucher:', error)
@@ -319,15 +324,15 @@ export default function Cart() {
       });
       if (!response.ok) throw new Error('Đặt hàng thất bại');
 
-      // Xóa các sản phẩm đã đặt khỏi giỏ hàng
-      await Promise.all(orderItems.map(item =>
-        fetch(`${API_URL}/cart/${item.id}?userId=${user.id}`, { method: 'DELETE' })
-      ));
-
-      toast.success('Đặt hàng thành công!');
-      // Chuyển hướng sang trang thanh toán
-      navigate('/checkout', { state: { order: orderData } });
+      // Chuyển hướng sang trang thanh toán với thông tin đơn hàng
+      navigate('/checkout', { 
+        state: { 
+          order: orderData,
+          cartItems: orderItems // Thêm thông tin giỏ hàng để xóa sau khi thanh toán thành công
+        } 
+      });
     } catch (error) {
+      console.error('Error creating order:', error);
       toast.error('Có lỗi khi đặt hàng, vui lòng thử lại!');
     }
   };

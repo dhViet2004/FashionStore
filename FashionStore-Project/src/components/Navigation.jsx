@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaSearch, FaShoppingCart, FaUser, FaBars, FaTimes, FaSignOutAlt } from 'react-icons/fa';
 import { Dropdown } from 'antd';
 import LoginModal from './LoginModal';
-import { useCart } from '../context/CartContext';
+import { useCart } from '../hooks/useCart';
 
 const Navigation = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -11,7 +11,20 @@ const Navigation = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
-  const { cartItems } = useCart();
+  const { cartCount, updateCartCount } = useCart();
+
+  // Cập nhật số lượng giỏ hàng khi component mount và khi có thay đổi trong localStorage
+  useEffect(() => {
+    updateCartCount();
+    
+    // Lắng nghe sự thay đổi trong localStorage
+    const handleStorageChange = () => {
+      updateCartCount();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [updateCartCount]);
 
   const handleSearchChange = (e) => {
     const query = e.target.value;
@@ -64,12 +77,12 @@ const Navigation = () => {
                 type="text"
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={handleSearchChange} // Lọc sản phẩm khi thay đổi input
+                onChange={handleSearchChange}
                 className="w-48 sm:w-64 px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
               />
               <FaSearch
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-500 hover:cursor-pointer"
-                onClick={handleSearchClick} // Lọc sản phẩm khi nhấn vào icon search
+                onClick={handleSearchClick}
               />
             </div>
           </div>
@@ -86,9 +99,9 @@ const Navigation = () => {
                   >
                     <FaShoppingCart className="mr-1" />
                     <span className="hidden sm:inline">Cart</span>
-                    {cartItems.length > 0 && (
+                    {cartCount > 0 && (
                       <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                        {cartItems.length}
+                        {cartCount}
                       </span>
                     )}
                   </Link>

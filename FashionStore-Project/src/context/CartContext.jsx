@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 
 const CartContext = createContext();
@@ -7,6 +7,31 @@ export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Memoize cart count
+  const cartCount = useMemo(() => cartItems.length, [cartItems]);
+
+  // Memoize cart total
+  const cartTotal = useMemo(() => 
+    cartItems.reduce((total, item) => total + (item.price * item.quantity), 0),
+    [cartItems]
+  );
+
+  const fetchCartItems = useCallback(async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:3001/cart?userId=${userId}`);
+      if (!response.ok) throw new Error('Failed to fetch cart items');
+      const data = await response.json();
+      setCartItems(data);
+      localStorage.setItem('cartCount', data.length);
+      window.dispatchEvent(new Event('storage'));
+    } catch (error) {
+      console.error('Error fetching cart items:', error);
+      toast.error('Không thể tải giỏ hàng');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (user) {
@@ -14,23 +39,14 @@ export const CartProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
+  }, [fetchCartItems]);
+
+  const updateCartCount = useCallback((newCount) => {
+    localStorage.setItem('cartCount', newCount);
+    window.dispatchEvent(new Event('storage'));
   }, []);
 
-  const fetchCartItems = async (userId) => {
-    try {
-      const response = await fetch(`http://localhost:3001/cart?userId=${userId}`);
-      if (!response.ok) throw new Error('Failed to fetch cart items');
-      const data = await response.json();
-      setCartItems(data);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
-      toast.error('Không thể tải giỏ hàng');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const addToCart = async (item) => {
+  const addToCart = useCallback(async (item) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user) {
@@ -38,13 +54,11 @@ export const CartProvider = ({ children }) => {
         return false;
       }
 
-      // Kiểm tra sản phẩm đã có trong giỏ hàng chưa
       const existingItem = cartItems.find(
         cartItem => cartItem.productId === item.productId && cartItem.size === item.size
       );
 
       if (existingItem) {
-        // Nếu đã có, cập nhật số lượng
         const newQuantity = existingItem.quantity + item.quantity;
         if (newQuantity > item.stock) {
           toast.error('Số lượng vượt quá tồn kho');
@@ -58,17 +72,18 @@ export const CartProvider = ({ children }) => {
         });
 
         if (response.ok) {
-          setCartItems(prevItems =>
-            prevItems.map(cartItem =>
+          setCartItems(prevItems => {
+            const newItems = prevItems.map(cartItem =>
               cartItem.id === existingItem.id
                 ? { ...cartItem, quantity: newQuantity }
                 : cartItem
-            )
-          );
+            );
+            updateCartCount(newItems.length);
+            return newItems;
+          });
           toast.success('Cập nhật số lượng thành công!');
         }
       } else {
-        // Nếu chưa có, thêm mới
         const response = await fetch('http://localhost:3001/cart', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -77,7 +92,11 @@ export const CartProvider = ({ children }) => {
 
         if (response.ok) {
           const newItem = await response.json();
-          setCartItems(prevItems => [...prevItems, newItem]);
+          setCartItems(prevItems => {
+            const newItems = [...prevItems, newItem];
+            updateCartCount(newItems.length);
+            return newItems;
+          });
           toast.success('Thêm vào giỏ hàng thành công!');
         }
       }
@@ -88,25 +107,29 @@ export const CartProvider = ({ children }) => {
       toast.error('Không thể thêm vào giỏ hàng');
       return false;
     }
-  };
+  }, [cartItems, updateCartCount]);
 
-  const removeFromCart = async (itemId) => {
+  const removeFromCart = useCallback(async (itemId) => {
     try {
       const response = await fetch(`http://localhost:3001/cart/${itemId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+        setCartItems(prevItems => {
+          const newItems = prevItems.filter(item => item.id !== itemId);
+          updateCartCount(newItems.length);
+          return newItems;
+        });
         toast.success('Xóa sản phẩm thành công');
       }
     } catch (error) {
       console.error('Error removing from cart:', error);
       toast.error('Không thể xóa sản phẩm');
     }
-  };
+  }, [updateCartCount]);
 
-  const updateQuantity = async (itemId, newQuantity) => {
+  const updateQuantity = useCallback(async (itemId, newQuantity) => {
     try {
       const response = await fetch(`http://localhost:3001/cart/${itemId}`, {
         method: 'PATCH',
@@ -115,26 +138,52 @@ export const CartProvider = ({ children }) => {
       });
 
       if (response.ok) {
-        setCartItems(prevItems =>
-          prevItems.map(item =>
-            item.id === itemId ? { ...item, quantity: newQuantity } : item
-          )
-        );
-        toast.success('Cập nhật số lượng thành công');
+        setCartItems(prevItems => {
+          const newItems = prevItems.map(cartItem =>
+            cartItem.id === itemId
+              ? { ...cartItem, quantity: newQuantity }
+              : cartItem
+          );
+          return newItems;
+        });
+        toast.success('Cập nhật số lượng thành công!');
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
       toast.error('Không thể cập nhật số lượng');
     }
-  };
+  }, []);
 
-  const value = {
+  const clearCart = useCallback(async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) return;
+
+      const response = await fetch(`http://localhost:3001/cart/clear?userId=${user.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setCartItems([]);
+        updateCartCount(0);
+        toast.success('Đã xóa tất cả sản phẩm trong giỏ hàng');
+      }
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      toast.error('Không thể xóa giỏ hàng');
+    }
+  }, [updateCartCount]);
+
+  const value = useMemo(() => ({
     cartItems,
+    cartCount,
+    cartTotal,
     loading,
     addToCart,
     removeFromCart,
     updateQuantity,
-  };
+    clearCart,
+  }), [cartItems, cartCount, cartTotal, loading, addToCart, removeFromCart, updateQuantity, clearCart]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
