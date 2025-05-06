@@ -14,7 +14,7 @@ import Checkout from './components/Checkout';
 import ZaloChat from './components/ZaloChat';
 import AIChatBox from './components/AIChatBox';
 import Favourite from './pages/favorites/Favourite';
-
+import Random from './components/Random';
 function App() {
   return (
     <Router>
@@ -37,6 +37,8 @@ function App() {
         <Footer />
         <AIChatBox />
         <ZaloChat />
+        <Random />
+
       </div>
     </Router>
   );

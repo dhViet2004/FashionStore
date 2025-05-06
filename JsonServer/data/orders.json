@@ -1524,7 +1524,7 @@
             "size": "M",
             "stock": 28
           },
-          "userId": 7,
+          "userId": 10,
           "id": 2
         }
       ],
@@ -1542,7 +1542,7 @@
       ]
     },
     {
-      "userId": 7,
+      "userId": 10,
       "items": [
         {
           "id": 2,
@@ -1559,19 +1559,19 @@
         "method": "standard",
         "fee": 30000,
         "address": {
-          "name": "Đặng Hoàng Việt",
-          "phone": "0364601530",
-          "email": "dviet037@gmail.com",
-          "province": "Tỉnh Bến Tre",
-          "district": "Huyện Mỏ Cày Nam",
-          "ward": "Thị trấn Mỏ Cày",
-          "address": "71 Lê Lợi",
+          "name": "Luong Minh Tan",
+          "phone": "0852997990",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "ward": "Xã Thung Nai",
+          "address": "ddd",
           "note": ""
         }
       },
       "payment": {
         "method": "cod",
-        "status": "completed"
+        "status": "Pending"
       },
       "voucher": null,
       "status": "processing",

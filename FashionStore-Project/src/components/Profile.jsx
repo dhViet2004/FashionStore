@@ -886,14 +886,16 @@ const Profile = () => {
                     <EnvironmentOutlined className="text-gray-400 mt-1" />
                     <div>
                       <div className="font-medium">Delivery Address</div>
-                      <div className="text-gray-600">{selectedOrder.shippingAddress || 'Not provided'}</div>
+                      <div className="text-gray-600">
+                        {selectedOrder.shipping?.address?.address}, {selectedOrder.shipping?.address?.ward}, {selectedOrder.shipping?.address?.district}, {selectedOrder.shipping?.address?.province}
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
                     <PhoneOutlined className="text-gray-400" />
                     <div>
                       <div className="font-medium">Contact Number</div>
-                      <div className="text-gray-600">{selectedOrder.contactNumber || 'Not provided'}</div>
+                      <div className="text-gray-600">{selectedOrder.shipping?.address?.phone || 'Not provided'}</div>
                     </div>
                   </div>
                   {selectedOrder.trackingNumber && (

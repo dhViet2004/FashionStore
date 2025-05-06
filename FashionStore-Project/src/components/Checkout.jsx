@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FaTruck, FaCreditCard, FaGift, FaCheck } from 'react-icons/fa';
+import { FaTruck, FaCreditCard, FaGift, FaCheck, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { useCart } from '../hooks/useCart';
+import { Modal, Form, Input, Select, Button } from 'antd';
 
 const API_URL = 'http://localhost:3001';
 const SHIPPING_METHODS = [
@@ -65,6 +66,7 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -510,6 +512,7 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) return;
+    if (isProcessing) return; // Prevent multiple submissions
 
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
@@ -518,13 +521,15 @@ export default function Checkout() {
       return;
     }
 
-    // Kiểm tra xem đã có đơn hàng nào đang xử lý chưa
+    // Kiểm tra số lượng đơn hàng đang xử lý
     try {
+      setIsProcessing(true); // Set processing state
       const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
       const existingOrders = await existingOrderResponse.json();
       
-      if (existingOrders.length > 0) {
-        toast.error('Bạn đã có đơn hàng đang xử lý. Vui lòng đợi đơn hàng hiện tại hoàn thành.');
+      if (existingOrders.length >= 5) {
+        toast.error('Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.');
+        setIsProcessing(false);
         return;
       }
 
@@ -557,13 +562,13 @@ export default function Checkout() {
         },
         payment: {
           method: payment.value,
-          status: 'completed'
+          status: payment.value === 'cod' ? 'Pending' : 'Completed'
         },
         voucher: appliedVoucher ? {
           code: appliedVoucher.code,
           discount: discount
         } : null,
-        status: 'completed',
+        status: 'pending',
         createdAt: formatDate(new Date())
       };
 
@@ -592,11 +597,6 @@ export default function Checkout() {
         // Cập nhật số lượng giỏ hàng ngay lập tức
         updateCountImmediately(0);
         toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
-        
-        // Chuyển hướng về trang chủ sau 2 giây
-        setTimeout(() => {
-          navigate('/');
-        }, 2000);
       } else {
         throw new Error('Failed to place order');
       }
@@ -605,6 +605,7 @@ export default function Checkout() {
       toast.error('Không thể đặt hàng. Vui lòng thử lại sau.');
     } finally {
       setLoading(false);
+      setIsProcessing(false); // Reset processing state
     }
   };
 
@@ -624,6 +625,79 @@ export default function Checkout() {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">
+      {/* Success Payment Modal */}
+      <Modal
+        open={orderSuccess}
+        footer={null}
+        closable={false}
+        width={400}
+        className="success-payment-modal"
+        style={{ top: '20%' }}
+      >
+        <style>
+          {`
+            .success-payment-modal .ant-modal-content {
+              border-radius: 16px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+              overflow: hidden;
+            }
+            .success-payment-modal .success-icon {
+              animation: scaleIn 0.5s ease-out;
+            }
+            .success-payment-modal .success-text {
+              animation: fadeIn 0.5s ease-out 0.3s both;
+            }
+            @keyframes scaleIn {
+              0% {
+                transform: scale(0);
+                opacity: 0;
+              }
+              50% {
+                transform: scale(1.2);
+              }
+              100% {
+                transform: scale(1);
+                opacity: 1;
+              }
+            }
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+                transform: translateY(10px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+          `}
+        </style>
+        <div className="text-center py-8">
+          <div className="success-icon mb-6">
+            <FaCheckCircle className="text-green-500 text-6xl mx-auto" />
+          </div>
+          <div className="success-text">
+            <h3 className="text-2xl font-bold text-gray-800 mb-2">Thanh toán thành công!</h3>
+            <p className="text-gray-600 mb-6">Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đang được xử lý.</p>
+            <div className="space-y-2 text-sm text-gray-500">
+              <p>Mã đơn hàng: #{orderId}</p>
+              <p>Thời gian đặt hàng: {formatDate(new Date())}</p>
+            </div>
+            <div className="mt-8">
+              <button
+                onClick={() => {
+                  setOrderSuccess(false);
+                  navigate('/');
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
       {/* Progress Steps */}
       <div className="mb-8">
         <div className="flex items-center justify-between relative">
@@ -673,7 +747,7 @@ export default function Checkout() {
               <h3 className="text-xl font-semibold">Thông tin giao hàng</h3>
               <button
                 onClick={handleAddNewAddress}
-                className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
+                className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium add-address-btn"
               >
                 Thêm địa chỉ mới
               </button>
@@ -713,24 +787,24 @@ export default function Checkout() {
                         </div>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 address-actions">
                       {!address.isDefault && (
                         <button
                           onClick={() => handleSetDefaultAddress(address._id)}
-                          className="text-blue-600 hover:text-blue-700"
+                          className="default-btn hover:text-green-600"
                         >
                           Đặt làm mặc định
                         </button>
                       )}
                       <button
                         onClick={() => handleEditAddress(address)}
-                        className="text-gray-600 hover:text-gray-700"
+                        className="edit-btn hover:text-blue-600"
                       >
                         Sửa
                       </button>
                       <button
                         onClick={() => handleDeleteAddress(address._id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="delete-btn hover:text-red-600"
                       >
                         Xóa
                       </button>
@@ -750,7 +824,7 @@ export default function Checkout() {
                 <p className="text-red-500 mb-2">Bạn chưa có địa chỉ giao hàng nào</p>
                 <button
                   onClick={handleAddNewAddress}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 add-address-btn"
                 >
                   Thêm địa chỉ ngay
                 </button>
@@ -774,7 +848,7 @@ export default function Checkout() {
                     name="shipping"
                     checked={shipping.value === method.value}
                     onChange={() => setShipping(method)}
-                    className="hidden"
+                    className="cursor-pointer"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -807,7 +881,7 @@ export default function Checkout() {
                     name="payment"
                     checked={payment.value === method.value}
                     onChange={() => setPayment(method)}
-                    className="hidden"
+                    className="cursor-pointer"
                   />
                   {method.icon}
                   <span className="font-medium">{method.label}</span>
@@ -824,6 +898,46 @@ export default function Checkout() {
             
             {/* Voucher Section */}
             <div className="mb-4">
+              <style>
+                {`
+                  .voucher-item {
+                    border: 1px solid #f0f0f0;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 12px;
+                    transition: all 0.3s ease;
+                    position: relative;
+                  }
+                  .voucher-item:hover {
+                    border-color: #40a9ff;
+                    box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                    transform: translateY(-2px);
+                  }
+                  .voucher-item .voucher-code {
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #1890ff;
+                  }
+                  .voucher-item .voucher-discount {
+                    color: #52c41a;
+                    font-weight: 500;
+                  }
+                  .voucher-item .voucher-min-order {
+                    color: #666;
+                    font-size: 13px;
+                  }
+                  .voucher-item .voucher-expiry {
+                    color: #999;
+                    font-size: 12px;
+                    margin-top: 8px;
+                  }
+                  .voucher-item .voucher-exclusive {
+                    color: #1890ff;
+                    font-size: 12px;
+                    margin-top: 4px;
+                  }
+                `}
+              </style>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -838,11 +952,11 @@ export default function Checkout() {
                       handleApplyVoucher();
                     }
                   }}
-                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-text"
                 />
                 <button
                   onClick={() => setShowVoucherModal(true)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 cursor-pointer"
                 >
                   <FaGift />
                 </button>
@@ -851,15 +965,35 @@ export default function Checkout() {
                 <p className="mt-2 text-sm text-red-500">{voucherError}</p>
               )}
               {appliedVoucher && (
-                <div className="mt-2 flex items-center justify-between text-green-600">
-                  <span>Đã áp dụng: {appliedVoucher.code}</span>
+                <div className="mt-3 voucher-item">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="voucher-code">{appliedVoucher.code}</div>
+                      <div className="voucher-discount mt-1">
+                        {appliedVoucher.type === 'percentage'
+                          ? `Giảm ${appliedVoucher.discount}%`
+                          : `Giảm ${formatCurrency(appliedVoucher.discount)}`}
+                      </div>
+                      {appliedVoucher.userId && (
+                        <div className="voucher-exclusive">
+                          Voucher dành riêng cho bạn
+                        </div>
+                      )}
+                    </div>
+                    <div className="voucher-min-order">
+                      Đơn tối thiểu: {formatCurrency(appliedVoucher.minOrder)}
+                    </div>
+                  </div>
+                  <div className="voucher-expiry">
+                    HSD: {formatDate(appliedVoucher.endDate)}
+                  </div>
                   <button
                     onClick={() => {
                       setAppliedVoucher(null);
                       setVoucherCode('');
                       setDiscount(0);
                     }}
-                    className="text-red-500 hover:text-red-700"
+                    className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
                   >
                     ×
                   </button>
@@ -892,11 +1026,11 @@ export default function Checkout() {
 
             {/* Place Order Button */}
             <button
-              className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="w-full mt-6 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed cursor-pointer"
               onClick={handlePlaceOrder}
-              disabled={isSubmitting || shippingAddresses.length === 0}
+              disabled={isSubmitting || shippingAddresses.length === 0 || isProcessing}
             >
-              {isSubmitting ? 'Đang xử lý...' : shippingAddresses.length === 0 ? 'Vui lòng thêm địa chỉ giao hàng' : 'Đặt hàng'}
+              {isProcessing ? 'Đang xử lý...' : isSubmitting ? 'Đang xử lý...' : shippingAddresses.length === 0 ? 'Vui lòng thêm địa chỉ giao hàng' : 'Đặt hàng'}
             </button>
           </div>
         </div>
@@ -904,243 +1038,302 @@ export default function Checkout() {
 
       {/* Voucher Modal */}
       {showVoucherModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Mã giảm giá của bạn</h2>
-              <button
-                onClick={() => setShowVoucherModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="max-h-96 overflow-y-auto">
-              {userVouchers.length > 0 ? (
-                userVouchers.map((voucher) => (
-                  <div
-                    key={`voucher-${voucher.id}`}
-                    className="p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleSelectVoucher(voucher)}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="font-medium text-lg">{voucher.code}</div>
-                        <div className="text-sm text-gray-500 mt-1">
-                          {voucher.type === 'percentage'
-                            ? `Giảm ${voucher.discount}%`
-                            : `Giảm ${formatCurrency(voucher.discount)}`}
+        <Modal
+          title="Mã giảm giá của bạn"
+          open={showVoucherModal}
+          onCancel={() => setShowVoucherModal(false)}
+          footer={null}
+          width={500}
+          className="voucher-modal"
+          style={{ top: 20 }}
+          bodyStyle={{ padding: '24px' }}
+        >
+          <style>
+            {`
+              .voucher-modal .ant-modal-content {
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+              }
+              .voucher-modal .ant-modal-header {
+                border-bottom: 2px solid #f0f0f0;
+                padding: 16px 24px;
+              }
+              .voucher-modal .ant-modal-title {
+                font-size: 20px;
+                font-weight: 600;
+              }
+              .voucher-modal .voucher-item {
+                border: 1px solid #f0f0f0;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 12px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+              }
+              .voucher-modal .voucher-item:hover {
+                border-color: #40a9ff;
+                box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                transform: translateY(-2px);
+              }
+              .voucher-modal .voucher-item .voucher-code {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1890ff;
+              }
+              .voucher-modal .voucher-item .voucher-discount {
+                color: #52c41a;
+                font-weight: 500;
+              }
+              .voucher-modal .voucher-item .voucher-min-order {
+                color: #666;
+                font-size: 13px;
+              }
+              .voucher-modal .voucher-item .voucher-expiry {
+                color: #999;
+                font-size: 12px;
+                margin-top: 8px;
+              }
+              .voucher-modal .voucher-item .voucher-exclusive {
+                color: #1890ff;
+                font-size: 12px;
+                margin-top: 4px;
+              }
+            `}
+          </style>
+          <div className="max-h-96 overflow-y-auto">
+            {userVouchers.length > 0 ? (
+              userVouchers.map((voucher) => (
+                <div
+                  key={`voucher-${voucher.id}`}
+                  className="voucher-item"
+                  onClick={() => handleSelectVoucher(voucher)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <div className="voucher-code">{voucher.code}</div>
+                      <div className="voucher-discount mt-1">
+                        {voucher.type === 'percentage'
+                          ? `Giảm ${voucher.discount}%`
+                          : `Giảm ${formatCurrency(voucher.discount)}`}
+                      </div>
+                      {voucher.userId && (
+                        <div className="voucher-exclusive">
+                          Voucher dành riêng cho bạn
                         </div>
-                        {voucher.userId && (
-                          <div className="text-xs text-blue-500 mt-1">
-                            Voucher dành riêng cho bạn
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Đơn tối thiểu: {formatCurrency(voucher.minOrder)}
-                      </div>
+                      )}
                     </div>
-                    <div className="text-xs text-gray-400 mt-2">
-                      HSD: {formatDate(voucher.endDate)}
+                    <div className="voucher-min-order">
+                      Đơn tối thiểu: {formatCurrency(voucher.minOrder)}
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="text-center py-4 text-gray-500">
-                  Bạn chưa có voucher nào
+                  <div className="voucher-expiry">
+                    HSD: {formatDate(voucher.endDate)}
+                  </div>
                 </div>
-              )}
-            </div>
+              ))
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Bạn chưa có voucher nào
+              </div>
+            )}
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Address Modal */}
-      {showAddressModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">
-                {isNewAddress ? 'Thêm địa chỉ mới' : 'Chỉnh sửa địa chỉ'}
-              </h2>
-              <button
-                onClick={() => setShowAddressModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ×
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên *</label>
-                <input
-                  type="text"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.name ? 'border-red-500' : ''
-                  }`}
-                  value={form.name}
-                  onChange={e => {
-                    setForm(f => ({ ...f, name: e.target.value }));
-                    setFormErrors(prev => ({ ...prev, name: '' }));
-                  }}
-                />
-                {formErrors.name && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại *</label>
-                <input
-                  type="tel"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.phone ? 'border-red-500' : ''
-                  }`}
-                  value={form.phone}
-                  onChange={e => {
-                    setForm(f => ({ ...f, phone: e.target.value }));
-                    setFormErrors(prev => ({ ...prev, phone: '' }));
-                  }}
-                />
-                {formErrors.phone && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.phone}</p>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.email ? 'border-red-500' : ''
-                  }`}
-                  value={form.email}
-                  onChange={e => {
-                    setForm(f => ({ ...f, email: e.target.value }));
-                    setFormErrors(prev => ({ ...prev, email: '' }));
-                  }}
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tỉnh/Thành phố *</label>
-                <select
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.province ? 'border-red-500' : ''
-                  }`}
-                  value={Array.isArray(provinces) && provinces.find(p => p.Name === form.province)?.Id || ''}
-                  onChange={(e) => {
-                    handleProvinceChange(e.target.value);
-                    setFormErrors(prev => ({ ...prev, province: '' }));
-                  }}
-                >
-                  <option value="">Chọn tỉnh/thành phố</option>
-                  {Array.isArray(provinces) && provinces.map(province => (
-                    <option key={province.Id} value={province.Id}>
-                      {province.Name}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.province && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.province}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quận/Huyện *</label>
-                <select
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.district ? 'border-red-500' : ''
-                  }`}
-                  value={Array.isArray(districts) && districts.find(d => d.Name === form.district)?.Id || ''}
-                  onChange={(e) => {
-                    handleDistrictChange(e.target.value);
-                    setFormErrors(prev => ({ ...prev, district: '' }));
-                  }}
-                  disabled={!form.province}
-                >
-                  <option value="">Chọn quận/huyện</option>
-                  {Array.isArray(districts) && districts.map(district => (
-                    <option key={district.Id} value={district.Id}>
-                      {district.Name}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.district && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.district}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phường/Xã *</label>
-                <select
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.ward ? 'border-red-500' : ''
-                  }`}
-                  value={Array.isArray(wards) && wards.find(w => w.Name === form.ward)?.Id || ''}
-                  onChange={(e) => {
-                    const selectedWard = Array.isArray(wards) && wards.find(w => w.Id === e.target.value);
-                    if (selectedWard) {
-                      setForm(prev => ({ ...prev, ward: selectedWard.Name }));
-                      setFormErrors(prev => ({ ...prev, ward: '' }));
-                    }
-                  }}
-                  disabled={!form.district}
-                >
-                  <option value="">Chọn phường/xã</option>
-                  {Array.isArray(wards) && wards.map(ward => (
-                    <option key={ward.Id} value={ward.Id}>
-                      {ward.Name}
-                    </option>
-                  ))}
-                </select>
-                {formErrors.ward && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.ward}</p>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Địa chỉ cụ thể *</label>
-                <input
-                  type="text"
-                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    formErrors.address ? 'border-red-500' : ''
-                  }`}
-                  value={form.address}
-                  onChange={e => {
-                    setForm(f => ({ ...f, address: e.target.value }));
-                    setFormErrors(prev => ({ ...prev, address: '' }));
-                  }}
-                />
-                {formErrors.address && (
-                  <p className="mt-1 text-sm text-red-500">{formErrors.address}</p>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Ghi chú</label>
-                <textarea
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  value={form.note}
-                  onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-                  rows="3"
-                />
-              </div>
-            </div>
-            <div className="mt-6 flex justify-end gap-4">
-              <button
-                onClick={() => setShowAddressModal(false)}
-                className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveAddress}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                {isNewAddress ? 'Thêm địa chỉ' : 'Lưu thay đổi'}
-              </button>
-            </div>
+      <Modal
+        title={isNewAddress ? 'Thêm địa chỉ mới' : 'Chỉnh sửa địa chỉ'}
+        open={showAddressModal}
+        onCancel={() => setShowAddressModal(false)}
+        footer={null}
+        width={800}
+        className="address-modal"
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '24px' }}
+      >
+        <style>
+          {`
+            .address-modal .ant-modal-content {
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            }
+            .address-modal .ant-modal-header {
+              border-bottom: 2px solid #f0f0f0;
+              padding: 16px 24px;
+            }
+            .address-modal .ant-modal-title {
+              font-size: 20px;
+              font-weight: 600;
+            }
+            .address-modal .ant-form-item-label > label {
+              font-weight: 500;
+            }
+            .address-modal .ant-input,
+            .address-modal .ant-select-selector {
+              border-radius: 8px !important;
+              border: 1px solid #d9d9d9;
+              cursor: text;
+            }
+            .address-modal .ant-input:hover,
+            .address-modal .ant-select-selector:hover {
+              border-color: #40a9ff !important;
+            }
+            .address-modal .ant-input:focus,
+            .address-modal .ant-select-focused .ant-select-selector {
+              border-color: #1890ff !important;
+              box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
+            }
+            .address-modal .ant-btn {
+              border-radius: 8px;
+              height: 40px;
+              font-weight: 500;
+              cursor: pointer;
+            }
+            .address-modal .ant-btn-primary {
+              background: #1890ff;
+              box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+            }
+            .address-modal .ant-btn-primary:hover {
+              background: #40a9ff;
+              box-shadow: 0 4px 12px rgba(24, 144, 255, 0.45);
+            }
+
+            /* Address management styles */
+            .address-actions button {
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .address-actions button:hover {
+              opacity: 0.8;
+            }
+            .address-actions .edit-btn {
+              color: #1890ff;
+            }
+            .address-actions .delete-btn {
+              color: #ff4d4f;
+            }
+            .address-actions .default-btn {
+              color: #52c41a;
+            }
+            .add-address-btn {
+              cursor: pointer;
+              transition: all 0.2s ease;
+            }
+            .add-address-btn:hover {
+              opacity: 0.8;
+            }
+          `}
+        </style>
+        <Form
+          layout="vertical"
+          initialValues={form}
+          onFinish={handleSaveAddress}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              name="name"
+              label="Họ tên"
+              rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+            >
+              <Input placeholder="Nhập họ tên" />
+            </Form.Item>
+
+            <Form.Item
+              name="phone"
+              label="Số điện thoại"
+              rules={[
+                { required: true, message: 'Vui lòng nhập số điện thoại' },
+                { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
+              ]}
+            >
+              <Input placeholder="Nhập số điện thoại" />
+            </Form.Item>
+
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                { required: true, message: 'Vui lòng nhập email' },
+                { type: 'email', message: 'Email không hợp lệ' }
+              ]}
+            >
+              <Input placeholder="Nhập email" />
+            </Form.Item>
+
+            <Form.Item
+              name="province"
+              label="Tỉnh/Thành phố"
+              rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
+            >
+              <Select
+                placeholder="Chọn tỉnh/thành phố"
+                onChange={handleProvinceChange}
+                options={provinces.map(province => ({
+                  value: province.Id,
+                  label: province.Name
+                }))}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="district"
+              label="Quận/Huyện"
+              rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
+            >
+              <Select
+                placeholder="Chọn quận/huyện"
+                onChange={handleDistrictChange}
+                options={districts.map(district => ({
+                  value: district.Id,
+                  label: district.Name
+                }))}
+                disabled={!form.province}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="ward"
+              label="Phường/Xã"
+              rules={[{ required: true, message: 'Vui lòng chọn phường/xã' }]}
+            >
+              <Select
+                placeholder="Chọn phường/xã"
+                options={wards.map(ward => ({
+                  value: ward.Id,
+                  label: ward.Name
+                }))}
+                disabled={!form.district}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="address"
+              label="Địa chỉ cụ thể"
+              rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
+              className="md:col-span-2"
+            >
+              <Input placeholder="Nhập địa chỉ cụ thể" />
+            </Form.Item>
+
+            <Form.Item
+              name="note"
+              label="Ghi chú"
+              className="md:col-span-2"
+            >
+              <Input.TextArea rows={3} placeholder="Nhập ghi chú (nếu có)" />
+            </Form.Item>
           </div>
-        </div>
-      )}
+
+          <div className="flex justify-end gap-4 mt-6">
+            <Button onClick={() => setShowAddressModal(false)}>
+              Hủy
+            </Button>
+            <Button type="primary" htmlType="submit">
+              {isNewAddress ? 'Thêm địa chỉ' : 'Lưu thay đổi'}
+            </Button>
+          </div>
+        </Form>
+      </Modal>
     </div>
   );
 } 
