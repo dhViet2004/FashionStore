@@ -25,6 +25,7 @@ const ProductCard = ({ product, onPayNow }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
+  const [isBuyNowModalVisible, setIsBuyNowModalVisible] = useState(false);
 
   useEffect(() => {
     // Kiểm tra xem sản phẩm có nằm trong danh sách yêu thích không
@@ -192,6 +193,66 @@ const ProductCard = ({ product, onPayNow }) => {
     navigate(`/products/${product.id}`); // Điều hướng tới trang chi tiết sản phẩm
   };
 
+  const handleBuyNow = async (e) => {
+    e.stopPropagation();
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      message.error('Vui lòng đăng nhập để thanh toán');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    setIsBuyNowModalVisible(true);
+  };
+
+  const handleBuyNowConfirm = async () => {
+    const selectedSizeObj = product.sizes.find(sizeOption => sizeOption.size === selectedSize);
+    if (!selectedSizeObj || selectedSizeObj.stock <= 0) {
+      showNotification(`Sản phẩm size ${selectedSize} đã hết hàng`, 'warning');
+      return;
+    }
+
+    // Create order data
+    const orderData = {
+      userId: JSON.parse(localStorage.getItem('user')).id,
+      items: [{
+        id: product.id,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        size: selectedSize,
+        imageUrl: product.imageUrl,
+        stock: selectedSizeObj.stock
+      }],
+      total: product.price,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Create order in the backend
+      const response = await fetch('http://localhost:3001/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create order');
+
+      // Navigate to checkout page with order data
+      navigate('/checkout', { 
+        state: { 
+          order: orderData
+        } 
+      });
+      setIsBuyNowModalVisible(false);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      message.error('Có lỗi xảy ra khi tạo đơn hàng');
+    }
+  };
+
   return (
     <>
       <div
@@ -255,10 +316,7 @@ const ProductCard = ({ product, onPayNow }) => {
             <Tooltip title="Thanh toán nhanh">
               <Button
                 type="primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onPayNow(product);
-                }}
+                onClick={handleBuyNow}
                 className="flex items-center justify-center w-full sm:w-1/2 h-7 sm:h-7 bg-gradient-to-r from-blue-600 via-indigo-700 to-indigo-800 hover:from-blue-700 hover:via-indigo-800 hover:to-indigo-900 text-white border-none rounded-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 <CreditCardOutlined className="text-[10px]" />
@@ -268,6 +326,41 @@ const ProductCard = ({ product, onPayNow }) => {
           </div>
         </div>
       </div>
+
+      <Modal
+        title="Chọn size để mua ngay"
+        open={isBuyNowModalVisible}
+        onOk={handleBuyNowConfirm}
+        onCancel={() => setIsBuyNowModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setIsBuyNowModalVisible(false)}>
+            Hủy
+          </Button>,
+          <Button key="submit" type="primary" onClick={handleBuyNowConfirm}>
+            Mua ngay
+          </Button>,
+        ]}
+      >
+        <div className="flex flex-col space-y-4">
+          <div className="flex items-center">
+            <span className="text-gray-600 mr-2">Size:</span>
+            <select 
+              className="border border-gray-300 rounded-md p-2 hover:cursor-pointer"
+              value={selectedSize}
+              onChange={(e) => setSelectedSize(e.target.value)}
+            >
+              {product.sizes.map((sizeOption, index) => (
+                <option key={index} value={sizeOption.size}>
+                  {sizeOption.size}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="text-sm text-gray-500">
+            Số lượng còn lại: {product.sizes.find(s => s.size === selectedSize)?.stock || 0}
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         title="Chọn size"
