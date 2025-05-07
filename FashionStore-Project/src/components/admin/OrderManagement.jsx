@@ -254,10 +254,14 @@ const OrderManagement = () => {
   ];
 
   const filteredOrders = orders.filter(order => {
+    if (!order) return false;
+
     const matchesSearch = 
-      order.id.toString().includes(searchText) ||
-      order.userId.toString().includes(searchText) ||
-      order.items.some(item => item.name.toLowerCase().includes(searchText.toLowerCase()));
+      (order.id?.toString() || '').includes(searchText) ||
+      (order.userId?.toString() || '').includes(searchText) ||
+      (order.items || []).some(item => 
+        (item?.name || '').toLowerCase().includes(searchText.toLowerCase())
+      );
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
