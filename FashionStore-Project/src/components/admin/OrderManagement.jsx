@@ -165,7 +165,23 @@ const OrderManagement = () => {
       render: (date) => {
         try {
           if (!date) return 'N/A';
-          const dateObj = new Date(date);
+          
+          // Handle different date formats
+          let dateObj;
+          if (typeof date === 'string') {
+            // Check if date is in Vietnamese format (e.g., "08:35 06/05/2025")
+            if (date.includes('/')) {
+              const [time, datePart] = date.split(' ');
+              const [day, month, year] = datePart.split('/');
+              const [hours, minutes] = time.split(':');
+              dateObj = new Date(year, month - 1, day, hours, minutes);
+            } else {
+              dateObj = new Date(date);
+            }
+          } else {
+            dateObj = new Date(date);
+          }
+
           if (isNaN(dateObj.getTime())) return 'Invalid Date';
           
           // Format date to Vietnamese format
@@ -183,9 +199,25 @@ const OrderManagement = () => {
       },
       sorter: (a, b) => {
         try {
-          const dateA = new Date(a.createdAt);
-          const dateB = new Date(b.createdAt);
-          if (isNaN(dateA.getTime()) || isNaN(dateB.getTime())) return 0;
+          const getDateValue = (dateStr) => {
+            if (!dateStr) return 0;
+            
+            // Handle different date formats
+            if (typeof dateStr === 'string') {
+              if (dateStr.includes('/')) {
+                const [time, datePart] = dateStr.split(' ');
+                const [day, month, year] = datePart.split('/');
+                const [hours, minutes] = time.split(':');
+                return new Date(year, month - 1, day, hours, minutes).getTime();
+              }
+            }
+            return new Date(dateStr).getTime();
+          };
+
+          const dateA = getDateValue(a.createdAt);
+          const dateB = getDateValue(b.createdAt);
+          
+          if (isNaN(dateA) || isNaN(dateB)) return 0;
           return dateA - dateB;
         } catch {
           return 0;

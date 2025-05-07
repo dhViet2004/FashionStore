@@ -32,6 +32,39 @@ import PromotionManagement from '../../components/admin/PromotionManagement';
 
 const { Title, Text } = Typography;
 
+// Helper function to parse date
+const parseDate = (dateStr) => {
+  if (!dateStr) return new Date();
+  
+  try {
+    // Handle Vietnamese format (e.g., "08:35 06/05/2025")
+    if (typeof dateStr === 'string') {
+      if (dateStr.includes('/')) {
+        const [time, datePart] = dateStr.split(' ');
+        if (time && datePart) {
+          const [day, month, year] = datePart.split('/');
+          const [hours, minutes] = time.split(':');
+          return new Date(year, month - 1, day, hours || 0, minutes || 0);
+        }
+      }
+      // Handle ISO format
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    // Handle Date object
+    if (dateStr instanceof Date) {
+      return dateStr;
+    }
+    // Return current date as fallback
+    return new Date();
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return new Date();
+  }
+};
+
 // Memoized Order Table component
 const OrderTable = React.memo(({ dataSource, columns }) => (
   <Table 
@@ -116,7 +149,7 @@ const Admin = () => {
 
       // Calculate overview data
       const currentMonthOrdersData = ordersData.filter(order => {
-        const orderDate = new Date(order.createdAt || order.date);
+        const orderDate = parseDate(order.createdAt);
         const currentDate = new Date();
         const isCurrentMonth = orderDate.getMonth() === currentDate.getMonth() && 
                              orderDate.getFullYear() === currentDate.getFullYear();
@@ -126,7 +159,7 @@ const Admin = () => {
       setCurrentMonthOrders(currentMonthOrdersData);
 
       const previousMonthOrdersData = ordersData.filter(order => {
-        const orderDate = new Date(order.createdAt || order.date);
+        const orderDate = parseDate(order.createdAt);
         const currentDate = new Date();
         const previousMonth = currentDate.getMonth() === 0 ? 11 : currentDate.getMonth() - 1;
         const previousYear = currentDate.getMonth() === 0 ? currentDate.getFullYear() - 1 : currentDate.getFullYear();
@@ -344,7 +377,7 @@ const Admin = () => {
                     const year = month.getFullYear();
                     
                     const monthOrders = allOrders.filter(order => {
-                      const orderDate = new Date(order.createdAt || order.date);
+                      const orderDate = parseDate(order.createdAt);
                       return orderDate.getMonth() === month.getMonth() && 
                              orderDate.getFullYear() === year &&
                              order.status === 'delivered';
@@ -393,7 +426,7 @@ const Admin = () => {
                     const year = month.getFullYear();
                     
                     const monthOrders = allOrders.filter(order => {
-                      const orderDate = new Date(order.createdAt || order.date);
+                      const orderDate = parseDate(order.createdAt);
                       return orderDate.getMonth() === month.getMonth() && 
                              orderDate.getFullYear() === year &&
                              order.status === 'delivered';
@@ -489,7 +522,16 @@ const Admin = () => {
                     title: 'Date',
                     dataIndex: 'createdAt',
                     key: 'createdAt',
-                    render: (date) => new Date(date).toLocaleDateString('vi-VN'),
+                    render: (date) => {
+                      const parsedDate = parseDate(date);
+                      return parsedDate.toLocaleString('vi-VN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                      });
+                    },
                   }
                 ]}
                 rowKey="id"
