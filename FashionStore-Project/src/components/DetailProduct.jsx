@@ -183,6 +183,57 @@ const DetailProduct = () => {
   };
 
   const handleBuyNow = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thanh toán');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    const selectedSize = product.sizes.find(sizeOption => sizeOption.size === size);
+    if (!selectedSize || quantity > selectedSize.stock) {
+      showNotification(`Số lượng vượt quá tồn kho (Còn ${selectedSize?.stock || 0} sản phẩm)`, 'warning');
+      return;
+    }
+
+    // Create order data
+    const orderData = {
+      userId: user.id,
+      items: [{
+        id: product.id,
+        productId: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: quantity,
+        size: size,
+        imageUrl: product.imageUrl,
+        stock: selectedSize.stock
+      }],
+      total: product.price * quantity,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Create order in the backend
+      const response = await fetch('http://localhost:3001/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create order');
+
+      // Navigate to checkout page with order data
+      navigate('/checkout', { 
+        state: { 
+          order: orderData
+        } 
+      });
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast.error('Có lỗi xảy ra khi tạo đơn hàng');
+    }
   };
 
   const handleCommentSubmit = async () => {
