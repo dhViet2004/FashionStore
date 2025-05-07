@@ -83,13 +83,13 @@
           "name": "",
           "phone": "",
           "email": "",
-          "province": "Tỉnh Hà Giang",
-          "district": "Huyện Đồng Văn",
+          "province": "Tỉnh Cao Bằng",
+          "district": "Huyện Bảo Lâm",
           "address": "",
           "note": "",
           "ward": "",
           "userId": 8,
-          "isDefault": true
+          "isDefault": false
         }
       ]
     },

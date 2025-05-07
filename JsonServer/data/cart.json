@@ -44,6 +44,36 @@
       },
       "userId": 7,
       "id": 5
+    },
+    {
+      "productId": 3,
+      "name": "Leather Jacket",
+      "price": 290000,
+      "quantity": 1,
+      "size": "M",
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "stock": 29,
+      "sizes": {
+        "size": "M",
+        "stock": 28
+      },
+      "userId": 8,
+      "id": 6
+    },
+    {
+      "productId": 4,
+      "name": "Running Shoes",
+      "price": 178000,
+      "quantity": 1,
+      "size": "M",
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/VayNgan-Den_f78pam.jpg",
+      "stock": 12,
+      "sizes": {
+        "size": "M",
+        "stock": 11
+      },
+      "userId": 8,
+      "id": 7
     }
   ]
 }
