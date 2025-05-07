@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FaTruck, FaCreditCard, FaGift, FaCheck, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
@@ -25,7 +25,7 @@ export default function Checkout() {
   const order = location.state?.order;
   const { updateCartCount, updateCountImmediately } = useCart();
 
-  // Thông tin form
+  // Form state
   const [form, setForm] = useState({
     name: '',
     phone: '',
@@ -36,11 +36,18 @@ export default function Checkout() {
     address: '',
     note: '',
   });
+
+  // Address state
   const [shippingAddresses, setShippingAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isNewAddress, setIsNewAddress] = useState(true);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
+  // Shipping & Payment state
   const [shipping, setShipping] = useState(SHIPPING_METHODS[0]);
   const [payment, setPayment] = useState(PAYMENT_METHODS[0]);
+
+  // Voucher state
   const [voucherCode, setVoucherCode] = useState(order?.voucher || '');
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [voucherError, setVoucherError] = useState('');
@@ -48,12 +55,18 @@ export default function Checkout() {
   const [userVouchers, setUserVouchers] = useState([]);
   const [showVoucherModal, setShowVoucherModal] = useState(false);
   const [discount, setDiscount] = useState(0);
-  const [showAddressModal, setShowAddressModal] = useState(false);
+
+  // Order state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeStep, setActiveStep] = useState(1);
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderId, setOrderId] = useState(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Error state
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessages, setErrorMessages] = useState([]);
   const [formErrors, setFormErrors] = useState({
     name: '',
     phone: '',
@@ -63,11 +76,27 @@ export default function Checkout() {
     ward: '',
     address: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [orderSuccess, setOrderSuccess] = useState(false);
-  const [orderId, setOrderId] = useState(null);
-  const [isProcessing, setIsProcessing] = useState(false);
 
+  // Address data state
+  const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [wards, setWards] = useState([]);
+
+  // Payment modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Memoized calculations
+  const subtotal = useMemo(() => 
+    order.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [order.items]
+  );
+
+  const total = useMemo(() => 
+    subtotal + shipping.fee - discount,
+    [subtotal, shipping.fee, discount]
+  );
+
+  // Fetch user data on mount
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return;
@@ -76,13 +105,22 @@ export default function Checkout() {
     fetchProvinces();
   }, []);
 
-  const fetchVouchers = async (userId) => {
+  // Fetch vouchers
+  const fetchVouchers = useCallback(async (userId) => {
     try {
       const response = await fetch(`${API_URL}/vouchers`);
       if (!response.ok) throw new Error('Failed to fetch vouchers');
       const allVouchers = await response.json();
       const userSpecificVouchers = allVouchers.filter(voucher => {
-        if (voucher.userId && voucher.userId !== userId) return false;
+        if (voucher.userIds && voucher.userIds.length > 0) {
+          if (!voucher.userIds.includes(userId)) {
+            console.log(`${voucher.code}: Filtered out - Not in userIds list`);
+            return false;
+          }
+        } else {
+          console.log(`${voucher.code}: Available for all users`);
+        }
+
         const currentDate = new Date();
         const endDate = new Date(voucher.endDate);
         if (currentDate > endDate) return false;
@@ -95,20 +133,18 @@ export default function Checkout() {
       setAvailableVouchers([]);
       setUserVouchers([]);
     }
-  };
+  }, []);
 
-  const fetchShippingAddresses = async (userId) => {
+  // Fetch shipping addresses
+  const fetchShippingAddresses = useCallback(async (userId) => {
     try {
-      // First check if the user exists
       const userResponse = await fetch(`${API_URL}/users/${userId}`);
       if (!userResponse.ok) throw new Error('Failed to fetch user');
       const user = await userResponse.json();
       
-      // Use the addresses from the user object
       const addresses = user.addresses || [];
       setShippingAddresses(addresses);
       
-      // Set default address if exists
       const defaultAddress = addresses.find(addr => addr.isDefault);
       if (defaultAddress) {
         setSelectedAddressId(defaultAddress._id);
@@ -118,46 +154,48 @@ export default function Checkout() {
       console.error('Error fetching addresses:', error);
       setShippingAddresses([]);
     }
-  };
+  }, []);
 
-  const fetchProvinces = async () => {
+  // Fetch provinces
+  const fetchProvinces = useCallback(async () => {
     try {
       const response = await fetch(`${API_URL}/vietnam-addresses`);
       if (!response.ok) throw new Error('Failed to fetch provinces');
       const data = await response.json();
-      // Access the vietnam-addresses array from the response
       setProvinces(data['vietnam-addresses'] || []);
     } catch (error) {
       console.error('Error fetching provinces:', error);
       setProvinces([]);
     }
-  };
+  }, []);
 
-  const handleProvinceChange = (provinceId) => {
+  // Handle province change
+  const handleProvinceChange = useCallback((provinceId) => {
     const selectedProvince = provinces.find(p => p.Id === provinceId);
     if (selectedProvince) {
       setDistricts(selectedProvince.Districts || []);
-      setWards([]); // Reset wards when province changes
+      setWards([]);
       setForm(prev => ({
         ...prev,
         province: selectedProvince.Name,
-        district: '', // Reset district when province changes
-        ward: '' // Reset ward when province changes
+        district: '',
+        ward: ''
       }));
     }
-  };
+  }, [provinces]);
 
-  const handleDistrictChange = (districtId) => {
+  // Handle district change
+  const handleDistrictChange = useCallback((districtId) => {
     const selectedDistrict = districts.find(d => d.Id === districtId);
     if (selectedDistrict) {
       setWards(selectedDistrict.Wards || []);
       setForm(prev => ({
         ...prev,
         district: selectedDistrict.Name,
-        ward: '' // Reset ward when district changes
+        ward: ''
       }));
     }
-  };
+  }, [districts]);
 
   const handleSaveAddress = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
@@ -301,11 +339,6 @@ export default function Checkout() {
     setShowAddressModal(true);
   };
 
-  // Tổng tiền sản phẩm
-  const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  // Tổng thanh toán cuối cùng
-  const total = subtotal + shipping.fee - discount;
-
   // Áp dụng voucher
   const handleApplyVoucher = async () => {
     setVoucherError('');
@@ -327,13 +360,19 @@ export default function Checkout() {
         setDiscount(0);
         return;
       }
-      if (voucher.userId && voucher.userId !== user.id) {
-        setVoucherError('Bạn không có quyền sử dụng voucher này');
-        toast.error('Bạn không có quyền sử dụng voucher này');
-        setAppliedVoucher(null);
-        setDiscount(0);
-        return;
+
+      // Kiểm tra voucher có userIds không
+      if (voucher.userIds && voucher.userIds.length > 0) {
+        // Nếu có userIds, kiểm tra user hiện tại có trong danh sách không
+        if (!voucher.userIds.includes(user.id)) {
+          setVoucherError('Bạn không có quyền sử dụng voucher này');
+          toast.error('Bạn không có quyền sử dụng voucher này');
+          setAppliedVoucher(null);
+          setDiscount(0);
+          return;
+        }
       }
+
       const currentDate = new Date();
       const startDate = new Date(voucher.startDate);
       const endDate = new Date(voucher.endDate);
@@ -392,11 +431,14 @@ export default function Checkout() {
         return;
       }
 
-      // Kiểm tra voucher có dành riêng cho user này không
-      if (voucher.userId && voucher.userId !== user.id) {
-        setVoucherError('Bạn không có quyền sử dụng voucher này');
-        toast.error('Bạn không có quyền sử dụng voucher này');
-        return;
+      // Kiểm tra voucher có userIds không
+      if (voucher.userIds && voucher.userIds.length > 0) {
+        // Nếu có userIds, kiểm tra user hiện tại có trong danh sách không
+        if (!voucher.userIds.includes(user.id)) {
+          setVoucherError('Bạn không có quyền sử dụng voucher này');
+          toast.error('Bạn không có quyền sử dụng voucher này');
+          return;
+        }
       }
 
       // Check voucher expiration
@@ -510,25 +552,65 @@ export default function Checkout() {
     return isValid;
   };
 
-  const handlePlaceOrder = async () => {
-    if (!validateForm()) return;
-    if (isProcessing) return; // Prevent multiple submissions
+  const validateOrderConditions = () => {
+    const errors = [];
+    
+    // Kiểm tra form
+    if (!validateForm()) {
+      errors.push('Vui lòng điền đầy đủ thông tin giao hàng');
+    }
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
-      toast.error('Vui lòng đăng nhập để đặt hàng');
-      navigate('/login');
-      return;
+    // Kiểm tra địa chỉ
+    if (shippingAddresses.length === 0) {
+      errors.push('Vui lòng thêm ít nhất một địa chỉ giao hàng');
     }
 
     // Kiểm tra số lượng đơn hàng đang xử lý
+    if (isProcessing) {
+      errors.push('Đang xử lý đơn hàng, vui lòng đợi');
+    }
+
+    // Kiểm tra voucher nếu có
+    if (appliedVoucher) {
+      const orderTotal = subtotal + shipping.fee;
+      if (orderTotal < appliedVoucher.minOrder) {
+        const remaining = appliedVoucher.minOrder - orderTotal;
+        errors.push(`Đơn hàng tối thiểu ${formatCurrency(appliedVoucher.minOrder)} để áp dụng mã này. Bạn cần thêm ${formatCurrency(remaining)}`);
+      }
+    }
+
+    setErrorMessages(errors);
+    return errors.length === 0;
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!validateOrderConditions()) {
+      setShowErrorModal(true);
+      return;
+    }
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      setErrorMessages(['Vui lòng đăng nhập để đặt hàng']);
+      setShowErrorModal(true);
+      return;
+    }
+
+    // Kiểm tra nếu là phương thức thanh toán trực tuyến
+    if (payment.value === 'qr' || payment.value === 'bank' || payment.value === 'e-wallet' || payment.value === 'card') {
+      setShowPaymentModal(true);
+      return;
+    }
+
+    // Nếu là COD thì tiếp tục đặt hàng
     try {
-      setIsProcessing(true); // Set processing state
+      setIsProcessing(true);
       const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
       const existingOrders = await existingOrderResponse.json();
       
       if (existingOrders.length >= 5) {
-        toast.error('Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.');
+        setErrorMessages(['Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.']);
+        setShowErrorModal(true);
         setIsProcessing(false);
         return;
       }
@@ -562,7 +644,7 @@ export default function Checkout() {
         },
         payment: {
           method: payment.value,
-          status: payment.value === 'cod' ? 'Pending' : 'Completed'
+          status: 'Completed' // Đã thanh toán vì là thanh toán trực tuyến
         },
         voucher: appliedVoucher ? {
           code: appliedVoucher.code,
@@ -589,6 +671,61 @@ export default function Checkout() {
         setOrderId(savedOrder.id);
         setOrderSuccess(true);
         
+        // Cập nhật số lượng sản phẩm
+        for (const item of order.items) {
+          try {
+            // Lấy thông tin sản phẩm hiện tại
+            const productResponse = await fetch(`${API_URL}/products/${item.id}`);
+            if (!productResponse.ok) throw new Error('Failed to fetch product');
+            const product = await productResponse.json();
+
+            // Cập nhật số lượng sản phẩm
+            const updatedQuantity = product.quantity - item.quantity;
+            const updateProductResponse = await fetch(`${API_URL}/products/${item.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                quantity: updatedQuantity
+              })
+            });
+
+            if (!updateProductResponse.ok) {
+              console.error(`Failed to update quantity for product ${item.id}`);
+            }
+          } catch (error) {
+            console.error(`Error updating product quantity for ${item.id}:`, error);
+          }
+        }
+        
+        // Nếu có áp dụng voucher, thêm userId vào usedBy của voucher
+        if (appliedVoucher) {
+          try {
+            const voucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`);
+            if (!voucherResponse.ok) throw new Error('Failed to fetch voucher');
+            
+            const voucher = await voucherResponse.json();
+            const updatedUsedBy = [...(voucher.usedBy || []), user.id];
+            
+            const updateVoucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                usedBy: updatedUsedBy
+              })
+            });
+            
+            if (!updateVoucherResponse.ok) {
+              console.error('Failed to update voucher usedBy');
+            }
+          } catch (error) {
+            console.error('Error updating voucher usedBy:', error);
+          }
+        }
+        
         // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
         for (const itemId of order.items.map(item => item.id)) {
           await fetch(`${API_URL}/cart/${itemId}?userId=${user.id}`, { method: 'DELETE' });
@@ -602,10 +739,156 @@ export default function Checkout() {
       }
     } catch (error) {
       console.error('Error placing order:', error);
-      toast.error('Không thể đặt hàng. Vui lòng thử lại sau.');
+      setErrorMessages(['Không thể đặt hàng. Vui lòng thử lại sau.']);
+      setShowErrorModal(true);
     } finally {
       setLoading(false);
-      setIsProcessing(false); // Reset processing state
+      setIsProcessing(false);
+    }
+  };
+
+  // Thêm hàm xử lý xác nhận thanh toán
+  const handleConfirmPayment = async () => {
+    setShowPaymentModal(false);
+    try {
+      setIsProcessing(true);
+      const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
+      const existingOrders = await existingOrderResponse.json();
+      
+      if (existingOrders.length >= 5) {
+        setErrorMessages(['Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.']);
+        setShowErrorModal(true);
+        setIsProcessing(false);
+        return;
+      }
+
+      setLoading(true);
+      const orderData = {
+        userId: user.id,
+        items: order.items.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          imageUrl: item.imageUrl
+        })),
+        total: total,
+        subtotal: subtotal,
+        shipping: {
+          method: shipping.value,
+          fee: shipping.fee,
+          address: {
+            name: form.name,
+            phone: form.phone,
+            email: form.email,
+            province: form.province,
+            district: form.district,
+            ward: form.ward,
+            address: form.address,
+            note: form.note
+          }
+        },
+        payment: {
+          method: payment.value,
+          status: 'Completed' // Đã thanh toán vì là thanh toán trực tuyến
+        },
+        voucher: appliedVoucher ? {
+          code: appliedVoucher.code,
+          discount: discount
+        } : null,
+        status: 'pending',
+        createdAt: formatDate(new Date())
+      };
+
+      // Lưu đơn hàng vào JSON server
+      const response = await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      if (response.ok) {
+        const savedOrder = await response.json();
+        console.log('Order saved successfully:', savedOrder);
+        setOrderId(savedOrder.id);
+        setOrderSuccess(true);
+        
+        // Cập nhật số lượng sản phẩm
+        for (const item of order.items) {
+          try {
+            // Lấy thông tin sản phẩm hiện tại
+            const productResponse = await fetch(`${API_URL}/products/${item.id}`);
+            if (!productResponse.ok) throw new Error('Failed to fetch product');
+            const product = await productResponse.json();
+
+            // Cập nhật số lượng sản phẩm
+            const updatedQuantity = product.quantity - item.quantity;
+            const updateProductResponse = await fetch(`${API_URL}/products/${item.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                quantity: updatedQuantity
+              })
+            });
+
+            if (!updateProductResponse.ok) {
+              console.error(`Failed to update quantity for product ${item.id}`);
+            }
+          } catch (error) {
+            console.error(`Error updating product quantity for ${item.id}:`, error);
+          }
+        }
+        
+        // Nếu có áp dụng voucher, thêm userId vào usedBy của voucher
+        if (appliedVoucher) {
+          try {
+            const voucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`);
+            if (!voucherResponse.ok) throw new Error('Failed to fetch voucher');
+            
+            const voucher = await voucherResponse.json();
+            const updatedUsedBy = [...(voucher.usedBy || []), user.id];
+            
+            const updateVoucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`, {
+              method: 'PATCH',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                usedBy: updatedUsedBy
+              })
+            });
+            
+            if (!updateVoucherResponse.ok) {
+              console.error('Failed to update voucher usedBy');
+            }
+          } catch (error) {
+            console.error('Error updating voucher usedBy:', error);
+          }
+        }
+        
+        // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+        for (const itemId of order.items.map(item => item.id)) {
+          await fetch(`${API_URL}/cart/${itemId}?userId=${user.id}`, { method: 'DELETE' });
+        }
+        
+        // Cập nhật số lượng giỏ hàng ngay lập tức
+        updateCountImmediately(0);
+        toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
+      } else {
+        throw new Error('Failed to place order');
+      }
+    } catch (error) {
+      console.error('Error placing order:', error);
+      setErrorMessages(['Không thể đặt hàng. Vui lòng thử lại sau.']);
+      setShowErrorModal(true);
+    } finally {
+      setLoading(false);
+      setIsProcessing(false);
     }
   };
 
@@ -625,6 +908,68 @@ export default function Checkout() {
 
   return (
     <div className="container mx-auto px-4 py-10 max-w-6xl">
+      {/* Error Modal */}
+      <Modal
+        title="Không thể đặt hàng"
+        open={showErrorModal}
+        onCancel={() => setShowErrorModal(false)}
+        footer={[
+          <Button key="close" onClick={() => setShowErrorModal(false)}>
+            Đóng
+          </Button>
+        ]}
+        width={500}
+        className="error-modal"
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '24px' }}
+      >
+        <style>
+          {`
+            .error-modal .ant-modal-content {
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            }
+            .error-modal .ant-modal-header {
+              border-bottom: 2px solid #f0f0f0;
+              padding: 16px 24px;
+            }
+            .error-modal .ant-modal-title {
+              font-size: 20px;
+              font-weight: 600;
+              color: #ff4d4f;
+            }
+            .error-modal .error-list {
+              list-style: none;
+              padding: 0;
+              margin: 0;
+            }
+            .error-modal .error-item {
+              display: flex;
+              align-items: flex-start;
+              gap: 8px;
+              padding: 8px 0;
+              color: #666;
+            }
+            .error-modal .error-item:not(:last-child) {
+              border-bottom: 1px solid #f0f0f0;
+            }
+            .error-modal .error-icon {
+              color: #ff4d4f;
+              font-size: 16px;
+              margin-top: 2px;
+            }
+          `}
+        </style>
+        <div className="error-list">
+          {errorMessages.map((message, index) => (
+            <div key={index} className="error-item">
+              <span className="error-icon">•</span>
+              <span>{message}</span>
+            </div>
+          ))}
+        </div>
+      </Modal>
+
       {/* Success Payment Modal */}
       <Modal
         open={orderSuccess}
@@ -1333,6 +1678,128 @@ export default function Checkout() {
             </Button>
           </div>
         </Form>
+      </Modal>
+
+      {/* Payment QR Modal */}
+      <Modal
+        title="Thanh toán trực tuyến"
+        open={showPaymentModal}
+        onCancel={() => setShowPaymentModal(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setShowPaymentModal(false)}>
+            Hủy
+          </Button>,
+          <Button 
+            key="confirm" 
+            type="primary" 
+            onClick={handleConfirmPayment}
+          >
+            Xác nhận thanh toán
+          </Button>
+        ]}
+        width={400}
+        className="payment-modal"
+        style={{ top: 20 }}
+        bodyStyle={{ padding: '24px' }}
+      >
+        <style>
+          {`
+            .payment-modal .ant-modal-content {
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            }
+            .payment-modal .ant-modal-header {
+              border-bottom: 2px solid #f0f0f0;
+              padding: 16px 24px;
+            }
+            .payment-modal .ant-modal-title {
+              font-size: 20px;
+              font-weight: 600;
+            }
+            .payment-modal .qr-container {
+              text-align: center;
+              padding: 20px;
+              background: #fafafa;
+              border-radius: 8px;
+              margin-bottom: 20px;
+            }
+            .payment-modal .qr-code {
+              width: 200px;
+              height: 200px;
+              margin: 0 auto;
+              background: #fff;
+              padding: 10px;
+              border-radius: 8px;
+              box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            .payment-modal .payment-info {
+              margin-top: 16px;
+              padding: 16px;
+              background: #f5f5f5;
+              border-radius: 8px;
+            }
+            .payment-modal .payment-info-item {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 8px;
+              color: #666;
+            }
+            .payment-modal .payment-info-item:last-child {
+              margin-bottom: 0;
+              padding-top: 8px;
+              border-top: 1px solid #e8e8e8;
+              font-weight: 600;
+              color: #333;
+            }
+            .payment-modal .payment-note {
+              margin-top: 16px;
+              padding: 12px;
+              background: #fffbe6;
+              border: 1px solid #ffe58f;
+              border-radius: 8px;
+              color: #666;
+              font-size: 13px;
+            }
+          `}
+        </style>
+        <div className="qr-container">
+          <div className="qr-code">
+            {/* Demo QR Code - Thay thế bằng QR code thật khi tích hợp */}
+            <div style={{ 
+              width: '100%', 
+              height: '100%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              background: '#f0f0f0',
+              borderRadius: '4px'
+            }}>
+              <span style={{ color: '#999', fontSize: '14px' }}>QR Code Demo</span>
+            </div>
+          </div>
+        </div>
+        <div className="payment-info">
+          <div className="payment-info-item">
+            <span>Số tiền:</span>
+            <span>{formatCurrency(total)}</span>
+          </div>
+          <div className="payment-info-item">
+            <span>Phương thức:</span>
+            <span>{payment.label}</span>
+          </div>
+          <div className="payment-info-item">
+            <span>Mã đơn hàng:</span>
+            <span>#{Math.floor(Math.random() * 1000000).toString().padStart(6, '0')}</span>
+          </div>
+        </div>
+        <div className="payment-note">
+          <p>Lưu ý: Đây là giao diện demo. Trong môi trường thực tế, bạn sẽ thấy:</p>
+          <ul style={{ margin: '8px 0 0 20px', padding: 0 }}>
+            <li>QR code thật để quét thanh toán</li>
+            <li>Thông tin tài khoản ngân hàng (nếu chọn chuyển khoản)</li>
+            <li>Form nhập thông tin thẻ (nếu chọn thẻ tín dụng)</li>
+          </ul>
+        </div>
       </Modal>
     </div>
   );
