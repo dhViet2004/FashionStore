@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Avatar, Button, Modal, Form, Input, DatePicker, message, Tabs, Table, Tag, Badge, Upload, Steps, Descriptions, Space, Divider, Typography } from 'antd';
-import { UserOutlined, EditOutlined, ShoppingCartOutlined, HistoryOutlined, TruckOutlined, MenuOutlined, CameraOutlined, UploadOutlined, CheckCircleOutlined, SyncOutlined, CarOutlined, ShoppingOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, InfoCircleOutlined, DollarOutlined, CreditCardOutlined, EnvironmentOutlined, PhoneOutlined } from '@ant-design/icons';
+import { UserOutlined, EditOutlined, ShoppingCartOutlined, HistoryOutlined, TruckOutlined, MenuOutlined, CameraOutlined, UploadOutlined, CheckCircleOutlined, SyncOutlined, CarOutlined, ShoppingOutlined, ClockCircleOutlined, CloseCircleOutlined, EyeOutlined, InfoCircleOutlined, DollarOutlined, CreditCardOutlined, EnvironmentOutlined, PhoneOutlined, GiftOutlined } from '@ant-design/icons';
 import { FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaCalendarAlt, FaIdCard } from 'react-icons/fa';
 import { format as formatDate, isValid, parseISO } from 'date-fns';
 import dayjs from 'dayjs';
@@ -21,6 +21,8 @@ const Profile = () => {
   const [isOrderModalVisible, setIsOrderModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editForm] = Form.useForm();
+  const [userVouchers, setUserVouchers] = useState([]);
+  const [voucherFilter, setVoucherFilter] = useState('all'); // 'all', 'unused', 'used'
 
   useEffect(() => {
     const handleResize = () => {
@@ -94,9 +96,52 @@ const Profile = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      // Fetch vouchers
+      fetch(`http://localhost:3001/vouchers`)
+        .then(response => response.json())
+        .then(data => {
+          // Filter vouchers for this user
+          const userSpecificVouchers = data.filter(voucher => {
+            // Check if voucher has userIds and user is in the list
+            if (voucher.userIds && voucher.userIds.length > 0) {
+              return voucher.userIds.includes(user.id);
+            }
+            // Include vouchers without userIds that haven't been used by this user
+            return !voucher.usedBy || !voucher.usedBy.includes(user.id);
+          });
+          setUserVouchers(userSpecificVouchers);
+        })
+        .catch(error => {
+          console.error('Error fetching vouchers:', error);
+          message.error('Failed to load vouchers');
+        });
+    }
+  }, [user]);
+
+  // Filter vouchers based on status
+  const filteredVouchers = userVouchers.filter(voucher => {
+    const isUsed = voucher.usedBy && voucher.usedBy.includes(user.id);
+    if (voucherFilter === 'all') return true;
+    if (voucherFilter === 'used') return isUsed;
+    if (voucherFilter === 'unused') return !isUsed;
+    return true;
+  });
+
   const formatDateSafely = (dateString, format) => {
     if (!dateString || dateString === "Not provided") return "Not provided";
     try {
+      // Handle the specific format "HH:mm DD/MM/YYYY"
+      if (dateString.includes('/')) {
+        const [time, date] = dateString.split(' ');
+        const [hours, minutes] = time.split(':');
+        const [day, month, year] = date.split('/');
+        const dateObj = new Date(year, month - 1, day, hours, minutes);
+        return formatDate(dateObj, format);
+      }
+      
+      // Handle ISO date strings
       const date = parseISO(dateString);
       return isValid(date) ? formatDate(date, format) : "Not provided";
     } catch (error) {
@@ -245,7 +290,7 @@ const Profile = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
-      render: (date) => formatDateSafely(date, 'MMM d, yyyy'),
+      render: (date) => formatDateSafely(date, 'HH:mm dd/MM/yyyy'),
     },
     {
       title: 'Items',
@@ -299,7 +344,7 @@ const Profile = () => {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 120,
-      render: (date) => formatDateSafely(date, 'MMM d, yyyy'),
+      render: (date) => formatDateSafely(date, 'HH:mm dd/MM/yyyy'),
     },
     {
       title: 'Items',
@@ -352,7 +397,7 @@ const Profile = () => {
           <div className="flex justify-between items-start">
             <div>
               <div className="font-medium">{id}</div>
-              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'MMM d, yyyy')}</div>
+              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'HH:mm dd/MM/yyyy')}</div>
             </div>
             <Button
               type="text"
@@ -382,7 +427,7 @@ const Profile = () => {
           <div className="flex justify-between items-start">
             <div>
               <div className="font-medium">{id}</div>
-              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'MMM d, yyyy')}</div>
+              <div className="text-xs text-gray-500">{formatDateSafely(record.createdAt, 'HH:mm dd/MM/yyyy')}</div>
             </div>
             <Button
               type="text"
@@ -491,6 +536,212 @@ const Profile = () => {
         return null;
     }
   };
+
+  const getPaymentMethodIcon = (method) => {
+    switch (method) {
+      case 'cod':
+        return <DollarOutlined className="text-green-500" />;
+      case 'bank':
+        return <CreditCardOutlined className="text-blue-500" />;
+      case 'e-wallet':
+        return <CreditCardOutlined className="text-purple-500" />;
+      case 'card':
+        return <CreditCardOutlined className="text-red-500" />;
+      case 'qr':
+        return <CreditCardOutlined className="text-yellow-500" />;
+      default:
+        return <CreditCardOutlined className="text-gray-500" />;
+    }
+  };
+
+  const getPaymentMethodLabel = (method) => {
+    switch (method) {
+      case 'cod':
+        return 'Thanh toán khi nhận hàng (COD)';
+      case 'bank':
+        return 'Chuyển khoản ngân hàng';
+      case 'e-wallet':
+        return 'Ví điện tử';
+      case 'card':
+        return 'Thẻ tín dụng/Ghi nợ';
+      case 'qr':
+        return 'QR code thanh toán';
+      default:
+        return method || 'Chưa xác định';
+    }
+  };
+
+  // Update the payment information card in the order details modal
+  const PaymentInformationCard = ({ order }) => (
+    <Card size="small" title={
+      <div className="flex items-center space-x-2">
+        <DollarOutlined className="text-blue-500" />
+        <span>Payment Information</span>
+      </div>
+    }>
+      <div className="space-y-3">
+       
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Payment Method:</span>
+          <div className="flex items-center space-x-2">
+            {getPaymentMethodIcon(order.payment?.method)}
+            <span className="font-medium">{getPaymentMethodLabel(order.payment?.method)}</span>
+          </div>
+        </div>
+        {order.payment?.status && (
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Payment Status:</span>
+            <Tag color={getPaymentStatusColor(order.payment.status)}>
+              {order.payment.status.toUpperCase()}
+            </Tag>
+          </div>
+        )}
+        <div className="flex justify-between items-center">
+          <span className="text-gray-600">Total Amount:</span>
+          <span className="font-medium text-lg">
+            {order.total.toLocaleString('vi-VN')}₫
+          </span>
+        </div>
+        {order.voucher && (
+          <div className="flex justify-between items-center text-green-600">
+            <span>Voucher Applied:</span>
+            <span>{order.voucher.code} (-{order.voucher.discount.toLocaleString('vi-VN')}₫)</span>
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+
+  // Update the order details modal to use the new PaymentInformationCard
+  const OrderDetailsModal = () => (
+    <Modal
+      title={
+        <div className="flex items-center space-x-2">
+          <InfoCircleOutlined className="text-blue-500" />
+          <span>Order Details #{selectedOrder?.id}</span>
+        </div>
+      }
+      open={isOrderModalVisible}
+      onCancel={() => setIsOrderModalVisible(false)}
+      footer={null}
+      width={isMobile ? "95%" : 600}
+    >
+      {selectedOrder && (
+        <div className="mt-4 space-y-4">
+          {/* Order Status and Progress */}
+          <Card size="small" title={
+            <div className="flex items-center space-x-2">
+              <ClockCircleOutlined className="text-blue-500" />
+              <span>Order Status</span>
+            </div>
+          }>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Status:</span>
+                <Tag color={getStatusColor(selectedOrder.status)} icon={getStatusIcon(selectedOrder.status)}>
+                  {selectedOrder.status.toUpperCase()}
+                </Tag>
+              </div>
+              <div className="text-sm text-gray-500">
+                Order Date: {formatDateSafely(selectedOrder.createdAt, 'HH:mm dd/MM/yyyy')}
+              </div>
+              <Steps
+                items={getOrderStatusSteps(selectedOrder.status)}
+                size="small"
+                className="mt-2"
+              />
+            </div>
+          </Card>
+
+          {/* Shipping Information */}
+          <Card size="small" title={
+            <div className="flex items-center space-x-2">
+              <EnvironmentOutlined className="text-blue-500" />
+              <span>Shipping Information</span>
+            </div>
+          }>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-2">
+                <EnvironmentOutlined className="text-gray-400 mt-1" />
+                <div>
+                  <div className="font-medium">Delivery Address</div>
+                  <div className="text-gray-600">
+                    {selectedOrder.shipping?.address?.address}, {selectedOrder.shipping?.address?.ward}, {selectedOrder.shipping?.address?.district}, {selectedOrder.shipping?.address?.province}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <PhoneOutlined className="text-gray-400" />
+                <div>
+                  <div className="font-medium">Contact Number</div>
+                  <div className="text-gray-600">{selectedOrder.shipping?.address?.phone || 'Not provided'}</div>
+                </div>
+              </div>
+              {selectedOrder.trackingNumber && (
+                <div className="mt-2 p-2 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <CarOutlined className="text-blue-500" />
+                    <span className="font-medium">Tracking Number:</span>
+                    <span>{selectedOrder.trackingNumber}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {/* Order Items */}
+          <Card size="small" title={
+            <div className="flex items-center space-x-2">
+              <ShoppingCartOutlined className="text-blue-500" />
+              <span>Order Items</span>
+            </div>
+          }>
+            <Table
+              dataSource={selectedOrder.items}
+              columns={[
+                {
+                  title: 'Product',
+                  dataIndex: 'name',
+                  key: 'name',
+                  render: (text, record) => (
+                    <Space>
+                      <img src={record.imageUrl} alt={text} className="w-8 h-8 object-cover rounded" />
+                      <span className="text-sm">{text}</span>
+                    </Space>
+                  ),
+                },
+                {
+                  title: 'Price',
+                  dataIndex: 'price',
+                  key: 'price',
+                  render: (price) => `${price.toLocaleString('vi-VN')}₫`,
+                  width: 100,
+                },
+                {
+                  title: 'Qty',
+                  dataIndex: 'quantity',
+                  key: 'quantity',
+                  width: 60,
+                },
+                {
+                  title: 'Total',
+                  key: 'total',
+                  render: (_, record) => `${(record.price * record.quantity).toLocaleString('vi-VN')}₫`,
+                  width: 100,
+                },
+              ]}
+              pagination={false}
+              size="small"
+              scroll={{ y: 200 }}
+            />
+          </Card>
+
+          {/* Replace the old payment information card with the new one */}
+          <PaymentInformationCard order={selectedOrder} />
+        </div>
+      )}
+    </Modal>
+  );
 
   if (loading) {
     return (
@@ -690,6 +941,129 @@ const Profile = () => {
         </div>
       ),
     });
+
+    // Add voucher tab
+    items.push({
+      key: 'vouchers',
+      label: (
+        <span>
+          <GiftOutlined />
+          <span className="hidden sm:inline ml-1">Vouchers</span>
+          <Badge count={userVouchers.length} style={{ marginLeft: '8px' }} />
+        </span>
+      ),
+      children: (
+        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border border-gray-200">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">My Vouchers</h2>
+            <div className="flex gap-2">
+              <Button 
+                type={voucherFilter === 'all' ? 'primary' : 'default'}
+                onClick={() => setVoucherFilter('all')}
+              >
+                Tất cả
+              </Button>
+              <Button 
+                type={voucherFilter === 'unused' ? 'primary' : 'default'}
+                onClick={() => setVoucherFilter('unused')}
+              >
+                Chưa sử dụng
+              </Button>
+              <Button 
+                type={voucherFilter === 'used' ? 'primary' : 'default'}
+                onClick={() => setVoucherFilter('used')}
+              >
+                Đã sử dụng
+              </Button>
+            </div>
+          </div>
+
+          {filteredVouchers.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredVouchers.map((voucher) => {
+                const isUsed = voucher.usedBy && voucher.usedBy.includes(user.id);
+                const isExpired = new Date(voucher.endDate) < new Date();
+                
+                return (
+                  <Card
+                    key={voucher.id}
+                    className={`voucher-card hover:shadow-lg transition-shadow duration-300 ${
+                      isUsed ? 'opacity-75' : ''
+                    }`}
+                    style={{
+                      background: isUsed 
+                        ? 'linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%)'
+                        : isExpired
+                        ? 'linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%)'
+                        : 'linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%)',
+                      border: `1px solid ${
+                        isUsed 
+                          ? '#d9d9d9' 
+                          : isExpired
+                          ? '#ffccc7'
+                          : '#e6f0ff'
+                      }`
+                    }}
+                  >
+                    <div className="flex flex-col h-full">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-lg font-bold text-blue-600">{voucher.code}</h3>
+                          <p className="text-sm text-gray-500">
+                            {voucher.type === 'percentage' 
+                              ? `Giảm ${voucher.discount}%` 
+                              : `Giảm ${voucher.discount.toLocaleString('vi-VN')}₫`}
+                          </p>
+                        </div>
+                        <Tag color={isUsed ? 'red' : isExpired ? 'orange' : 'green'}>
+                          {isUsed ? 'Đã dùng' : isExpired ? 'Hết hạn' : 'Còn hạn'}
+                        </Tag>
+                      </div>
+                      
+                      <div className="flex-grow">
+                        <p className="text-sm text-gray-600 mb-2">
+                          Đơn tối thiểu: {voucher.minOrder.toLocaleString('vi-VN')}₫
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          HSD: {formatDateSafely(voucher.endDate, 'dd/MM/yyyy')}
+                        </p>
+                      </div>
+
+                      {!isUsed && !isExpired && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <Button 
+                            type="primary" 
+                            block
+                            onClick={() => {
+                              // Copy voucher code to clipboard
+                              navigator.clipboard.writeText(voucher.code);
+                              message.success('Đã sao chép mã voucher!');
+                            }}
+                          >
+                            Sao chép mã
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-6 sm:py-8">
+              <GiftOutlined className="text-4xl sm:text-5xl text-gray-300 mb-3 sm:mb-4" />
+              <p className="text-lg sm:text-xl text-gray-500">
+                {voucherFilter === 'all' 
+                  ? 'Bạn chưa có voucher nào'
+                  : voucherFilter === 'unused'
+                  ? 'Bạn chưa có voucher chưa sử dụng nào'
+                  : 'Bạn chưa có voucher đã sử dụng nào'}
+              </p>
+            </div>
+          )}
+        </div>
+      ),
+    });
   }
 
   return (
@@ -835,158 +1209,7 @@ const Profile = () => {
         </Modal>
 
         {/* Order Details Modal */}
-        <Modal
-          title={
-            <div className="flex items-center space-x-2">
-              <InfoCircleOutlined className="text-blue-500" />
-              <span>Order Details #{selectedOrder?.id}</span>
-            </div>
-          }
-          open={isOrderModalVisible}
-          onCancel={() => setIsOrderModalVisible(false)}
-          footer={null}
-          width={isMobile ? "95%" : 600}
-        >
-          {selectedOrder && (
-            <div className="mt-4 space-y-4">
-              {/* Order Status and Progress */}
-              <Card size="small" title={
-                <div className="flex items-center space-x-2">
-                  <ClockCircleOutlined className="text-blue-500" />
-                  <span>Order Status</span>
-                </div>
-              }>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Status:</span>
-                    <Tag color={getStatusColor(selectedOrder.status)} icon={getStatusIcon(selectedOrder.status)}>
-                      {selectedOrder.status.toUpperCase()}
-                    </Tag>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    Order Date: {formatDateSafely(selectedOrder.createdAt, 'PPP')}
-                  </div>
-                  <Steps
-                    items={getOrderStatusSteps(selectedOrder.status)}
-                    size="small"
-                    className="mt-2"
-                  />
-                </div>
-              </Card>
-
-              {/* Shipping Information */}
-              <Card size="small" title={
-                <div className="flex items-center space-x-2">
-                  <EnvironmentOutlined className="text-blue-500" />
-                  <span>Shipping Information</span>
-                </div>
-              }>
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <EnvironmentOutlined className="text-gray-400 mt-1" />
-                    <div>
-                      <div className="font-medium">Delivery Address</div>
-                      <div className="text-gray-600">{selectedOrder.shippingAddress || 'Not provided'}</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <PhoneOutlined className="text-gray-400" />
-                    <div>
-                      <div className="font-medium">Contact Number</div>
-                      <div className="text-gray-600">{selectedOrder.contactNumber || 'Not provided'}</div>
-                    </div>
-                  </div>
-                  {selectedOrder.trackingNumber && (
-                    <div className="mt-2 p-2 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <CarOutlined className="text-blue-500" />
-                        <span className="font-medium">Tracking Number:</span>
-                        <span>{selectedOrder.trackingNumber}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
-
-              {/* Order Items */}
-              <Card size="small" title={
-                <div className="flex items-center space-x-2">
-                  <ShoppingCartOutlined className="text-blue-500" />
-                  <span>Order Items</span>
-                </div>
-              }>
-                <Table
-                  dataSource={selectedOrder.items}
-                  columns={[
-                    {
-                      title: 'Product',
-                      dataIndex: 'name',
-                      key: 'name',
-                      render: (text, record) => (
-                        <Space>
-                          <img src={record.imageUrl} alt={text} className="w-8 h-8 object-cover rounded" />
-                          <span className="text-sm">{text}</span>
-                        </Space>
-                      ),
-                    },
-                    {
-                      title: 'Price',
-                      dataIndex: 'price',
-                      key: 'price',
-                      render: (price) => `${price.toLocaleString('vi-VN')}₫`,
-                      width: 100,
-                    },
-                    {
-                      title: 'Qty',
-                      dataIndex: 'quantity',
-                      key: 'quantity',
-                      width: 60,
-                    },
-                    {
-                      title: 'Total',
-                      key: 'total',
-                      render: (_, record) => `${(record.price * record.quantity).toLocaleString('vi-VN')}₫`,
-                      width: 100,
-                    },
-                  ]}
-                  pagination={false}
-                  size="small"
-                  scroll={{ y: 200 }}
-                />
-              </Card>
-
-              {/* Payment Information */}
-              <Card size="small" title={
-                <div className="flex items-center space-x-2">
-                  <DollarOutlined className="text-blue-500" />
-                  <span>Payment Information</span>
-                </div>
-              }>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Payment Status:</span>
-                    <Tag color={getPaymentStatusColor(selectedOrder.paymentStatus)} icon={getPaymentStatusIcon(selectedOrder.paymentStatus)}>
-                      {selectedOrder.paymentStatus?.toUpperCase() || 'PENDING'}
-                    </Tag>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Payment Method:</span>
-                    <span className="flex items-center">
-                      <CreditCardOutlined className="mr-2" />
-                      {selectedOrder.paymentMethod || 'Credit Card'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Total Amount:</span>
-                    <span className="font-medium text-lg">
-                      {selectedOrder.total.toLocaleString('vi-VN')}₫
-                    </span>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-        </Modal>
+        <OrderDetailsModal />
       </div>
     </div>
   );

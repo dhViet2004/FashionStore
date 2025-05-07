@@ -234,14 +234,16 @@ const ProductManager = () => {
       title: 'Product',
       dataIndex: 'name',
       key: 'name',
+      width: 300,
+      fixed: 'left',
       render: (text, record) => (
         <div className="flex items-center">
           <img 
             src={record.imageUrl} 
             alt={text} 
-            className="w-10 h-10 rounded-md object-cover mr-3"
+            className="w-10 h-10 rounded-md object-cover mr-3 flex-shrink-0"
           />
-          <div>
+          <div className="overflow-x-auto whitespace-nowrap">
             <div className="font-medium">{text}</div>
             <div className="text-xs text-gray-500">{record.category}</div>
           </div>
@@ -252,12 +254,14 @@ const ProductManager = () => {
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
+      width: 150,
       render: (price) => <span className="font-medium">{formatCurrency(price)}</span>,
     },
     {
       title: 'Sizes & Stock',
       dataIndex: 'sizes',
       key: 'sizes',
+      width: 250,
       render: (sizes) => (
         <div className="flex flex-wrap gap-1">
           {sizes?.map((size, index) => (
@@ -272,6 +276,7 @@ const ProductManager = () => {
       title: 'Rating',
       dataIndex: 'rating',
       key: 'rating',
+      width: 200,
       render: (rating) => (
         <div className="flex items-center">
           <span className="text-yellow-500 mr-1">★</span>
@@ -283,6 +288,8 @@ const ProductManager = () => {
     {
       title: 'Actions',
       key: 'actions',
+      width: 120,
+      fixed: 'right',
       render: (_, record) => (
         <Space size="middle">
           <Tooltip title="Edit">
@@ -315,13 +322,13 @@ const ProductManager = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="mb-6 shadow-md">
-        <div className="flex justify-between items-center mb-6">
-          <Title level={3} className="m-0">Product Management</Title>
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
+          <Title level={3} className="m-0 text-center md:text-left">Product Management</Title>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={handleAddProduct}
-            className="bg-blue-500 hover:bg-blue-600 border-none"
+            className="bg-blue-500 hover:bg-blue-600 border-none w-full md:w-auto"
           >
             Add Product
           </Button>
@@ -339,13 +346,18 @@ const ProductManager = () => {
           </div>
         )}
 
-        <Table 
-          dataSource={products} 
-          columns={columns} 
-          rowKey="id"
-          pagination={{ pageSize: 10 }}
-          className="shadow-sm"
-        />
+        <div className="overflow-x-auto w-full">
+          <Table 
+            dataSource={products} 
+            columns={columns} 
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+            className="shadow-sm"
+            scroll={{ x: 1200 }}
+            size="middle"
+            bordered
+          />
+        </div>
       </Card>
 
       <Modal
@@ -353,8 +365,10 @@ const ProductManager = () => {
         open={!!editingProduct}
         onCancel={handleCancel}
         footer={null}
-        width={800}
-        destroyOnClose
+        width="95%"
+        style={{ maxWidth: '800px' }}
+        destroyOnClose={false}
+        className="product-form-modal"
       >
         <Form
           form={form}
@@ -369,6 +383,8 @@ const ProductManager = () => {
               form.submit();
             }
           }}
+          preserve={true}
+          className="w-full"
         >
           <Form.Item
             name="name"
@@ -379,7 +395,7 @@ const ProductManager = () => {
             <Input placeholder="Enter product name" />
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-x-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
               name="category"
               label="Category"
@@ -441,25 +457,29 @@ const ProductManager = () => {
                   </Button>
                 </div>
                 {fields.map(({ key, name, ...restField }) => (
-                  <Row key={key} gutter={8} className="mb-2">
-                    <Col span={8}>
+                  <Row key={key} gutter={[8, 8]} className="mb-2">
+                    <Col xs={8} sm={8}>
                       <Form.Item
                         {...restField}
                         name={[name, 'size']}
                         rules={[{ required: true, message: 'Missing size' }]}
                       >
                         <Select placeholder="Select size">
-                          <Option value="S">S</Option>
-                          <Option value="M">M</Option>
-                          <Option value="L">L</Option>
-                          <Option value="XL">XL</Option>
-                          <Option value="XXL">XXL</Option>
-                          <Option value="XXXL">XXXL</Option>
-                          <Option value="XXXXL">XXXXL</Option>
+                          {['S', 'M', 'L', 'XL', 'XXL', 'XXXL', 'XXXXL'].map(size => {
+                            const currentSizes = form.getFieldValue('sizes') || [];
+                            const isSizeExists = currentSizes.some((s, index) => 
+                              s && s.size === size && index !== name
+                            );
+                            return (
+                              <Option key={size} value={size} disabled={isSizeExists}>
+                                {size}
+                              </Option>
+                            );
+                          })}
                         </Select>
                       </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col xs={12} sm={12}>
                       <Form.Item
                         {...restField}
                         name={[name, 'stock']}
@@ -473,7 +493,7 @@ const ProductManager = () => {
                         />
                       </Form.Item>
                     </Col>
-                    <Col span={4}>
+                    <Col xs={4} sm={4}>
                       <Button
                         type="text"
                         danger
@@ -482,10 +502,8 @@ const ProductManager = () => {
                           remove(name);
                           handleSizeChange();
                         }}
-                        className="mt-1 flex items-center gap-1"
-                      >
-                        Delete Size
-                      </Button>
+                        className="mt-1 flex items-center justify-center w-full"
+                      />
                     </Col>
                   </Row>
                 ))}
@@ -493,18 +511,23 @@ const ProductManager = () => {
             )}
           </Form.List>
 
-          <Form.Item className="flex justify-end space-x-3 mb-0">
-            <Button onClick={handleCancel}>
-              Cancel
-            </Button>
-            <Button 
-              type="primary" 
-              htmlType="submit" 
-              loading={isSubmitting}
-              className="bg-blue-500 hover:bg-blue-600 border-none"
-            >
-              {editingProduct?.id ? 'Update' : 'Add'} Product
-            </Button>
+          <Form.Item className="flex justify-end space-x-3 mb-0 mt-4">
+            <div className="grid grid-cols-2 gap-4 w-full">
+              <Button 
+                onClick={handleCancel} 
+                className="w-full"
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={isSubmitting}
+                className="bg-blue-500 hover:bg-blue-600 border-none w-full"
+              >
+                {editingProduct?.id ? 'Update' : 'Add'} Product
+              </Button>
+            </div>
           </Form.Item>
         </Form>
       </Modal>

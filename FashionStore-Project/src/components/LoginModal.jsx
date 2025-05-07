@@ -4,13 +4,20 @@ import { FaTimes } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { FaFacebook } from 'react-icons/fa';
 import { useGoogleLogin } from '@react-oauth/google';
-import { App } from 'antd';
+import { App, Modal } from 'antd';
 import { CheckCircleOutlined, CloseCircleOutlined, UserOutlined } from '@ant-design/icons';
+import emailjs from '@emailjs/browser';
+
+// Initialize EmailJS
+emailjs.init("7XFC_c_S4UZoF26T_"); // Public key from your EmailJS service
 
 const LoginModal = ({ onClose, onLogin }) => {
   const navigate = useNavigate();
   const { message: messageApi } = App.useApp();
   const [rightPanelActive, setRightPanelActive] = useState(false);
+  const [forgotPasswordModalVisible, setForgotPasswordModalVisible] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
   const [signupData, setSignupData] = useState({
     username: '',
     email: '',
@@ -79,7 +86,12 @@ const LoginModal = ({ onClose, onLogin }) => {
     try {
       const response = await fetch(`http://localhost:3001/users?username=${signinData.username}`);
       const users = await response.json();
-      const user = users.find(u => u.username === signinData.username && u.password === signinData.password);
+      
+      // Kiểm tra chính xác username và password
+      const user = users.find(u => 
+        u.username === signinData.username && 
+        u.password === signinData.password
+      );
 
       if (user) {
         messageApi.success({
@@ -98,10 +110,14 @@ const LoginModal = ({ onClose, onLogin }) => {
             marginTop: '20vh',
           },
         });
+
+        // Lưu toàn bộ thông tin user vào localStorage
         localStorage.setItem('user', JSON.stringify(user));
+        
         if (typeof onLogin === 'function') {
           onLogin(user);
         }
+        
         onClose();
         if (user.role === 'admin') {
           navigate('/admin');
@@ -328,6 +344,49 @@ const LoginModal = ({ onClose, onLogin }) => {
     console.log('Facebook login clicked');
   };
 
+  const handleForgotPassword = async () => {
+    if (!forgotPasswordEmail) {
+      messageApi.error('Please enter your email address');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    try {
+      // Check if email exists in database
+      const response = await fetch(`http://localhost:3001/users?email=${forgotPasswordEmail}`);
+      const users = await response.json();
+
+      if (users.length === 0) {
+        messageApi.error('Email not found in our system');
+        return;
+      }
+
+      const user = users[0];
+      
+      // Send email using EmailJS with original password
+      const templateParams = {
+        to_email: forgotPasswordEmail,
+        password: user.password, // Original password from database
+        email: forgotPasswordEmail
+      };
+
+      await emailjs.send(
+        "service_k7pkl19",
+        "template_4rsezo2",
+        templateParams
+      );
+
+      messageApi.success('Your password has been sent to your email');
+      setForgotPasswordModalVisible(false);
+      setForgotPasswordEmail('');
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      messageApi.error('Failed to send password. Please try again later.');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: 'url("https://res.cloudinary.com/dh1o42tjk/image/upload/v1744710728/16be05d672b4da505d38cad34b1e2ddf_hgulp2.jpg")' }}>
@@ -428,9 +487,13 @@ const LoginModal = ({ onClose, onLogin }) => {
               required
             />
             <div className="w-full text-right">
-              <a href="#" className="text-sm text-blue-600 hover:text-blue-800 hover:underline">
+              <button
+                type="button"
+                onClick={() => setForgotPasswordModalVisible(true)}
+                className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              >
                 Quên mật khẩu?
-              </a>
+              </button>
             </div>
             <button
               type="submit"
@@ -489,6 +552,32 @@ const LoginModal = ({ onClose, onLogin }) => {
             </div>
           </div>
         </div>
+
+        {/* Forgot Password Modal */}
+        <Modal
+          title="Forgot Password"
+          open={forgotPasswordModalVisible}
+          onCancel={() => setForgotPasswordModalVisible(false)}
+          footer={null}
+        >
+          <div className="p-4">
+            <p className="mb-4">Enter your email address and we'll send you a new password.</p>
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={forgotPasswordEmail}
+              onChange={(e) => setForgotPasswordEmail(e.target.value)}
+              className="w-full p-3 mb-4 border border-gray-200 rounded focus:outline-none focus:border-gray-400"
+            />
+            <button
+              onClick={handleForgotPassword}
+              disabled={forgotPasswordLoading}
+              className="w-full rounded-full border border-gray-700 bg-gray-700 text-white text-xs font-medium py-3 px-11 uppercase tracking-wider transition-all duration-300 hover:bg-gray-800 active:scale-95 focus:outline-none hover:cursor-pointer disabled:opacity-50"
+            >
+              {forgotPasswordLoading ? 'Sending...' : 'Reset Password'}
+            </button>
+          </div>
+        </Modal>
       </div>
     </div>
   );

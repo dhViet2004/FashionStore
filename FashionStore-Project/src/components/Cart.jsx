@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useNavigate } from "react-router-dom"
 import { useCart } from '../hooks/useCart'
+import { Modal } from 'antd'
 
 const API_URL = 'http://localhost:3001'
 
@@ -56,29 +57,53 @@ export default function Cart() {
         throw new Error('Failed to fetch vouchers')
       }
       const allVouchers = await response.json()
+      console.log('All vouchers from API:', allVouchers)
+      console.log('Current user ID:', userId)
       
       // Lọc voucher dành riêng cho user
       const userSpecificVouchers = allVouchers.filter(voucher => {
-        // Kiểm tra voucher có dành riêng cho user này không
-        if (voucher.userId && voucher.userId !== userId) {
-          return false
+        console.log('\nChecking voucher:', voucher.code)
+        
+        // Kiểm tra voucher có userIds không
+        if (voucher.userIds && voucher.userIds.length > 0) {
+          // Nếu có userIds, chỉ hiển thị cho user trong danh sách
+          if (!voucher.userIds.includes(userId)) {
+            console.log(`${voucher.code}: Filtered out - Not in userIds list`)
+            return false
+          }
+        } else {
+          // Nếu không có userIds, hiển thị cho tất cả user
+          console.log(`${voucher.code}: Available for all users`)
         }
         
         // Kiểm tra voucher đã hết hạn chưa
         const currentDate = new Date()
         const endDate = new Date(voucher.endDate)
+        
+        // Reset time part to compare only dates
+        currentDate.setHours(0, 0, 0, 0)
+        endDate.setHours(0, 0, 0, 0)
+        
+        console.log(`${voucher.code}: Current date:`, currentDate.toISOString().split('T')[0])
+        console.log(`${voucher.code}: End date:`, endDate.toISOString().split('T')[0])
+        console.log(`${voucher.code}: Is expired?`, currentDate > endDate)
+        
         if (currentDate > endDate) {
+          console.log(`${voucher.code}: Filtered out - Expired`)
           return false
         }
 
-        // Kiểm tra voucher đã được sử dụng chưa
+        // Kiểm tra voucher đã được sử dụng bởi user này chưa
         if (voucher.usedBy && voucher.usedBy.includes(userId)) {
+          console.log(`${voucher.code}: Filtered out - Already used by this user`)
           return false
         }
 
+        console.log(`${voucher.code}: Passed all filters`)
         return true
       })
 
+      console.log('\nFinal filtered vouchers:', userSpecificVouchers)
       setAvailableVouchers(allVouchers)
       setUserVouchers(userSpecificVouchers)
     } catch (error) {
@@ -272,12 +297,13 @@ export default function Cart() {
     console.log('Subtotal:', subtotal)
 
     if (appliedVoucher.type === 'fixed') {
+      // For fixed discount, return the discount amount directly
       return appliedVoucher.discount
     } else {
-      const subtotalInVND = subtotal * 1000 // Convert to VND
-      const discount = (subtotalInVND * appliedVoucher.discount) / 100
+      // For percentage discount, calculate based on subtotal
+      const discount = (subtotal * appliedVoucher.discount) / 100
       console.log('Percentage discount:', discount)
-      return discount
+      return Math.round(discount) // Round to avoid floating point issues
     }
   }
 
@@ -359,7 +385,7 @@ export default function Cart() {
                 checked={allSelected}
                 onChange={(e) => handleSelectAll(e.target.checked)}
                 disabled={cartItems.length === 0}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cart-checkbox"
               />
               <label htmlFor="select-all" className="text-3xl font-bold cursor-pointer">
                 Giỏ hàng của bạn
@@ -399,14 +425,14 @@ export default function Cart() {
                         <div className="flex items-center justify-between gap-6">
                           <div className="flex items-center border rounded-lg overflow-hidden">
                             <button 
-                              className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 transition-colors quantity-btn"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                             >
                               <span className="text-xl">-</span>
                             </button>
                             <span className="w-10 text-center font-medium">{item.quantity}</span>
                             <button 
-                              className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 transition-colors"
+                              className="h-10 w-10 flex items-center justify-center hover:bg-gray-100 transition-colors quantity-btn"
                               onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                             >
                               <span className="text-xl">+</span>
@@ -415,7 +441,7 @@ export default function Cart() {
                           <div className="flex items-center gap-4">
                             <span className="text-lg font-semibold text-gray-800">{formatCurrency(item.price * item.quantity)}</span>
                             <button 
-                              className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50"
+                              className="text-red-500 hover:text-red-700 transition-colors p-2 rounded-full hover:bg-red-50 remove-item-btn"
                               onClick={() => handleRemoveItem(item.id)}
                             >
                               <span className="text-xl">×</span>
@@ -437,7 +463,7 @@ export default function Cart() {
               <p className="text-gray-500 mb-6">Hãy thêm một vài sản phẩm và quay lại đây nhé!</p>
               <a 
                 href="/products" 
-                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700"
+                className="bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700 continue-shopping-btn"
               >
                 Tiếp tục mua sắm
               </a>
@@ -453,6 +479,113 @@ export default function Cart() {
                 
                 {/* Voucher Input */}
                 <div className="mb-4">
+                  <style>
+                    {`
+                      .voucher-item {
+                        border: 1px solid #f0f0f0;
+                        border-radius: 8px;
+                        padding: 16px;
+                        margin-bottom: 12px;
+                        transition: all 0.3s ease;
+                        position: relative;
+                      }
+                      .voucher-item:hover {
+                        border-color: #40a9ff;
+                        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                        transform: translateY(-2px);
+                      }
+                      .voucher-item .voucher-code {
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: #1890ff;
+                      }
+                      .voucher-item .voucher-discount {
+                        color: #52c41a;
+                        font-weight: 500;
+                      }
+                      .voucher-item .voucher-min-order {
+                        color: #666;
+                        font-size: 13px;
+                      }
+                      .voucher-item .voucher-expiry {
+                        color: #999;
+                        font-size: 12px;
+                        margin-top: 8px;
+                      }
+                      .voucher-item .voucher-exclusive {
+                        color: #1890ff;
+                        font-size: 12px;
+                        margin-top: 4px;
+                      }
+                      /* Cart page styles */
+                      .cart-checkbox {
+                        cursor: pointer;
+                      }
+                      .cart-checkbox:disabled {
+                        cursor: not-allowed;
+                      }
+                      .quantity-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .quantity-btn:hover {
+                        background-color: #f3f4f6;
+                      }
+                      .remove-item-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .remove-item-btn:hover {
+                        background-color: #fee2e2;
+                      }
+                      .continue-shopping-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .continue-shopping-btn:hover {
+                        opacity: 0.9;
+                      }
+                      .voucher-input {
+                        cursor: text;
+                      }
+                      .voucher-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .voucher-btn:hover {
+                        opacity: 0.9;
+                      }
+                      .voucher-btn:disabled {
+                        cursor: not-allowed;
+                      }
+                      .checkout-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .checkout-btn:hover {
+                        opacity: 0.9;
+                      }
+                      .checkout-btn:disabled {
+                        cursor: not-allowed;
+                      }
+                      .voucher-item {
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                      }
+                      .voucher-item:hover {
+                        border-color: #40a9ff;
+                        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                        transform: translateY(-2px);
+                      }
+                      .remove-voucher-btn {
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                      }
+                      .remove-voucher-btn:hover {
+                        background-color: #fee2e2;
+                      }
+                    `}
+                  </style>
                   <div className="flex flex-col gap-2">
                     <div className="flex gap-2 flex-nowrap overflow-hidden">
                       <input
@@ -463,11 +596,11 @@ export default function Cart() {
                           setVoucherCode(e.target.value)
                           setVoucherError('')
                         }}
-                        className="flex-1 min-w-0 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 min-w-0 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 voucher-input"
                       />
                       <button
                         onClick={() => setShowVoucherModal(true)}
-                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 whitespace-nowrap flex-shrink-0"
+                        className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 whitespace-nowrap flex-shrink-0 voucher-btn"
                       >
                         Chọn voucher
                       </button>
@@ -475,7 +608,7 @@ export default function Cart() {
                     <button
                       onClick={handleApplyVoucher}
                       disabled={!voucherCode.trim()}
-                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed voucher-btn"
                     >
                       Áp dụng
                     </button>
@@ -486,11 +619,31 @@ export default function Cart() {
                     </div>
                   )}
                   {appliedVoucher && (
-                    <div className="mt-2 text-green-600 flex items-center justify-between">
-                      <span>Đã áp dụng mã: {appliedVoucher.code}</span>
+                    <div className="mt-3 voucher-item">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="voucher-code">{appliedVoucher.code}</div>
+                          <div className="voucher-discount mt-1">
+                            {appliedVoucher.type === 'percentage'
+                              ? `Giảm ${appliedVoucher.discount}%`
+                              : `Giảm ${formatCurrency(appliedVoucher.discount)}`}
+                          </div>
+                          {appliedVoucher.userId && (
+                            <div className="voucher-exclusive">
+                              Voucher dành riêng cho bạn
+                            </div>
+                          )}
+                        </div>
+                        <div className="voucher-min-order">
+                          Đơn tối thiểu: {formatCurrency(appliedVoucher.minOrder)}
+                        </div>
+                      </div>
+                      <div className="voucher-expiry">
+                        HSD: {new Date(appliedVoucher.endDate).toLocaleDateString('vi-VN')}
+                      </div>
                       <button
                         onClick={handleRemoveVoucher}
-                        className="text-red-500 hover:text-red-700"
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 remove-voucher-btn"
                       >
                         ×
                       </button>
@@ -499,58 +652,106 @@ export default function Cart() {
                 </div>
 
                 {/* Voucher Modal */}
-                {showVoucherModal && (
-                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                      <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold">Mã giảm giá của bạn</h2>
-                        <button
-                          onClick={() => setShowVoucherModal(false)}
-                          className="text-gray-500 hover:text-gray-700"
+                <Modal
+                  title="Mã giảm giá của bạn"
+                  open={showVoucherModal}
+                  onCancel={() => setShowVoucherModal(false)}
+                  footer={null}
+                  width={500}
+                  className="voucher-modal"
+                  style={{ top: 20 }}
+                  bodyStyle={{ padding: '24px' }}
+                >
+                  <style>
+                    {`
+                      .voucher-modal .ant-modal-content {
+                        border-radius: 12px;
+                        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                      }
+                      .voucher-modal .ant-modal-header {
+                        border-bottom: 2px solid #f0f0f0;
+                        padding: 16px 24px;
+                      }
+                      .voucher-modal .ant-modal-title {
+                        font-size: 20px;
+                        font-weight: 600;
+                      }
+                      .voucher-modal .voucher-item {
+                        border: 1px solid #f0f0f0;
+                        border-radius: 8px;
+                        padding: 16px;
+                        margin-bottom: 12px;
+                        transition: all 0.3s ease;
+                        cursor: pointer;
+                      }
+                      .voucher-modal .voucher-item:hover {
+                        border-color: #40a9ff;
+                        box-shadow: 0 2px 8px rgba(24, 144, 255, 0.15);
+                        transform: translateY(-2px);
+                      }
+                      .voucher-modal .voucher-item .voucher-code {
+                        font-size: 18px;
+                        font-weight: 600;
+                        color: #1890ff;
+                      }
+                      .voucher-modal .voucher-item .voucher-discount {
+                        color: #52c41a;
+                        font-weight: 500;
+                      }
+                      .voucher-modal .voucher-item .voucher-min-order {
+                        color: #666;
+                        font-size: 13px;
+                      }
+                      .voucher-modal .voucher-item .voucher-expiry {
+                        color: #999;
+                        font-size: 12px;
+                        margin-top: 8px;
+                      }
+                      .voucher-modal .voucher-item .voucher-exclusive {
+                        color: #1890ff;
+                        font-size: 12px;
+                        margin-top: 4px;
+                      }
+                    `}
+                  </style>
+                  <div className="max-h-96 overflow-y-auto">
+                    {userVouchers.length > 0 ? (
+                      userVouchers.map((voucher) => (
+                        <div
+                          key={voucher.id}
+                          className="voucher-item"
+                          onClick={() => handleSelectVoucher(voucher)}
                         >
-                          ×
-                        </button>
-                      </div>
-                      <div className="max-h-96 overflow-y-auto">
-                        {userVouchers.length > 0 ? (
-                          userVouchers.map((voucher) => (
-                            <div
-                              key={voucher.id}
-                              className="p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer"
-                              onClick={() => handleSelectVoucher(voucher)}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <div className="font-medium text-lg">{voucher.code}</div>
-                                  <div className="text-sm text-gray-500 mt-1">
-                                    {voucher.type === 'percentage' 
-                                      ? `Giảm ${voucher.discount}%` 
-                                      : `Giảm ${formatCurrency(voucher.discount)}`}
-                                  </div>
-                                  {voucher.userId && (
-                                    <div className="text-xs text-blue-500 mt-1">
-                                      Voucher dành riêng cho bạn
-                                    </div>
-                                  )}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  Đơn tối thiểu: {formatCurrency(voucher.minOrder)}
-                                </div>
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="voucher-code">{voucher.code}</div>
+                              <div className="voucher-discount mt-1">
+                                {voucher.type === 'percentage'
+                                  ? `Giảm ${voucher.discount}%`
+                                  : `Giảm ${formatCurrency(voucher.discount)}`}
                               </div>
-                              <div className="text-xs text-gray-400 mt-2">
-                                HSD: {new Date(voucher.endDate).toLocaleDateString('vi-VN')}
-                              </div>
+                              {voucher.userId && (
+                                <div className="voucher-exclusive">
+                                  Voucher dành riêng cho bạn
+                                </div>
+                              )}
                             </div>
-                          ))
-                        ) : (
-                          <div className="text-center py-4 text-gray-500">
-                            Bạn chưa có voucher nào
+                            <div className="voucher-min-order">
+                              Đơn tối thiểu: {formatCurrency(voucher.minOrder)}
+                            </div>
                           </div>
-                        )}
+                          <div className="voucher-expiry">
+                            HSD: {new Date(voucher.endDate).toLocaleDateString('vi-VN')}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500">
+                        Bạn chưa có voucher nào
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                </Modal>
 
                 <div className="space-y-3">
                   <div className="flex justify-between">
@@ -576,7 +777,7 @@ export default function Cart() {
               </div>
               <div className="p-6 pt-0">
                 <button 
-                  className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  className="w-full bg-blue-600 text-white py-3 rounded-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed checkout-btn"
                   disabled={selectedItems.length === 0}
                   onClick={handleCheckout}
                 >
