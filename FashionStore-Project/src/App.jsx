@@ -17,35 +17,40 @@ import Favourite from './pages/favorites/Favourite';
 import Random from './components/Random';
 import AboutUs from './pages/AboutUs';
 import Contact from './pages/Contact';
+import { ProductProvider } from './context/ProductContext';
+import { OrderProvider } from './context/OrderContext';
 
 function App() {
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen">
-        <Navigation />
-        <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:productId" element={<DetailProduct />} />
-            <Route path="/categories" element={<Categories />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/login" element={<LoginModal onClose={() => window.history.back()} onLogin={() => window.location.reload()} />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/favorites" element={<Favourite />} />
-            <Route path="/about" element={<AboutUs />} />
-            <Route path="/contact" element={<Contact />} />
-          </Routes>
-        </main>
-        <Footer />
-        <AIChatBox />
-        <ZaloChat />
-        <Random />
-
-      </div>
-    </Router>
+    <ProductProvider>
+      <OrderProvider>
+        <Router>
+          <div className="flex flex-col min-h-screen">
+            <Navigation />
+            <main className="flex-grow">
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/products/:productId" element={<DetailProduct />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/login" element={<LoginModal onClose={() => window.history.back()} onLogin={() => window.location.reload()} />} />
+                <Route path="/checkout" element={<Checkout />} />
+                <Route path="/favorites" element={<Favourite />} />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/contact" element={<Contact />} />
+              </Routes>
+            </main>
+            <Footer />
+            <AIChatBox />
+            <ZaloChat />
+            <Random />
+          </div>
+        </Router>
+      </OrderProvider>
+    </ProductProvider>
   );
 }
 

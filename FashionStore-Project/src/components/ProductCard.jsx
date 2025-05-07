@@ -23,9 +23,9 @@ const ProductCard = ({ product, onPayNow }) => {
   const [isFavorite, setIsFavorite] = useState(false); // Trạng thái yêu thích
   const [selectedSize, setSelectedSize] = useState('M'); // Giá trị mặc định
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isQuickPurchase, setIsQuickPurchase] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
-  const [isBuyNowModalVisible, setIsBuyNowModalVisible] = useState(false);
 
   useEffect(() => {
     // Kiểm tra xem sản phẩm có nằm trong danh sách yêu thích không
@@ -103,17 +103,23 @@ const ProductCard = ({ product, onPayNow }) => {
     }
   };
 
-  const showSizeModal = (e) => {
+  const showSizeModal = (e, isQuickBuy = false) => {
     e.stopPropagation();
+    setIsQuickPurchase(isQuickBuy);
     setIsModalVisible(true);
   };
 
   const handleModalOk = () => {
-    handleAddToCart();
+    if (isQuickPurchase) {
+      handleBuyNow();
+    } else {
+      handleAddToCart();
+    }
   };
 
   const handleModalCancel = () => {
     setIsModalVisible(false);
+    setIsQuickPurchase(false);
   };
 
   const handleToggleFavorite = async () => {
@@ -193,8 +199,7 @@ const ProductCard = ({ product, onPayNow }) => {
     navigate(`/products/${product.id}`); // Điều hướng tới trang chi tiết sản phẩm
   };
 
-  const handleBuyNow = async (e) => {
-    e.stopPropagation();
+  const handleBuyNow = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       message.error('Vui lòng đăng nhập để thanh toán');
@@ -203,52 +208,45 @@ const ProductCard = ({ product, onPayNow }) => {
       return;
     }
 
-    setIsBuyNowModalVisible(true);
-  };
-
-  const handleBuyNowConfirm = async () => {
-    const selectedSizeObj = product.sizes.find(sizeOption => sizeOption.size === selectedSize);
-    if (!selectedSizeObj || selectedSizeObj.stock <= 0) {
-      showNotification(`Sản phẩm size ${selectedSize} đã hết hàng`, 'warning');
+    // Kiểm tra tồn kho
+    const sizeOption = product.sizes.find(size => size.size === selectedSize);
+    if (!sizeOption || sizeOption.stock <= 0) {
+      showNotification('Sản phẩm đã hết hàng!', 'warning');
       return;
     }
 
-    // Create order data
+    // Tạo dữ liệu đơn hàng
     const orderData = {
-      userId: JSON.parse(localStorage.getItem('user')).id,
+      userId: user.id,
       items: [{
-        id: product.id,
         productId: product.id,
         name: product.name,
         price: product.price,
         quantity: 1,
         size: selectedSize,
         imageUrl: product.imageUrl,
-        stock: selectedSizeObj.stock
+        stock: sizeOption.stock
       }],
       total: product.price,
+      status: 'pending',
+      paymentMethod: 'COD',
+      shippingAddress: user.address || '',
       createdAt: new Date().toISOString()
     };
 
     try {
-      // Create order in the backend
-      const response = await fetch('http://localhost:3001/orders', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-
-      if (!response.ok) throw new Error('Failed to create order');
-
-      // Navigate to checkout page with order data
+      // Lưu đơn hàng vào localStorage để sử dụng ở trang checkout
+      localStorage.setItem('quickOrder', JSON.stringify(orderData));
+      
+      // Chuyển hướng đến trang thanh toán
       navigate('/checkout', { 
         state: { 
-          order: orderData
+          order: orderData,
+          isQuickOrder: true
         } 
       });
-      setIsBuyNowModalVisible(false);
     } catch (error) {
-      console.error('Error creating order:', error);
+      console.error('Error creating quick order:', error);
       message.error('Có lỗi xảy ra khi tạo đơn hàng');
     }
   };
@@ -306,7 +304,7 @@ const ProductCard = ({ product, onPayNow }) => {
             <Tooltip title="Thêm vào giỏ hàng">
               <Button
                 type="default"
-                onClick={showSizeModal}
+                onClick={(e) => showSizeModal(e, false)}
                 className="flex items-center justify-center w-full sm:w-1/2 h-7 sm:h-7 bg-white text-blue-600 border border-blue-600 rounded-lg transition-all duration-300 hover:bg-blue-50 hover:scale-105 mb-2 sm:mb-0"
               >
                 <ShoppingCartOutlined className="text-[10px]" />
@@ -316,7 +314,7 @@ const ProductCard = ({ product, onPayNow }) => {
             <Tooltip title="Thanh toán nhanh">
               <Button
                 type="primary"
-                onClick={handleBuyNow}
+                onClick={(e) => showSizeModal(e, true)}
                 className="flex items-center justify-center w-full sm:w-1/2 h-7 sm:h-7 bg-gradient-to-r from-blue-600 via-indigo-700 to-indigo-800 hover:from-blue-700 hover:via-indigo-800 hover:to-indigo-900 text-white border-none rounded-lg transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-xl"
               >
                 <CreditCardOutlined className="text-[10px]" />
@@ -328,42 +326,7 @@ const ProductCard = ({ product, onPayNow }) => {
       </div>
 
       <Modal
-        title="Chọn size để mua ngay"
-        open={isBuyNowModalVisible}
-        onOk={handleBuyNowConfirm}
-        onCancel={() => setIsBuyNowModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsBuyNowModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button key="submit" type="primary" onClick={handleBuyNowConfirm}>
-            Mua ngay
-          </Button>,
-        ]}
-      >
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center">
-            <span className="text-gray-600 mr-2">Size:</span>
-            <select 
-              className="border border-gray-300 rounded-md p-2 hover:cursor-pointer"
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
-            >
-              {product.sizes.map((sizeOption, index) => (
-                <option key={index} value={sizeOption.size}>
-                  {sizeOption.size}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="text-sm text-gray-500">
-            Số lượng còn lại: {product.sizes.find(s => s.size === selectedSize)?.stock || 0}
-          </div>
-        </div>
-      </Modal>
-
-      <Modal
-        title="Chọn size"
+        title={isQuickPurchase ? "Chọn size để mua ngay" : "Chọn size"}
         open={isModalVisible}
         onOk={handleModalOk}
         onCancel={handleModalCancel}
@@ -372,7 +335,7 @@ const ProductCard = ({ product, onPayNow }) => {
             Hủy
           </Button>,
           <Button key="submit" type="primary" onClick={handleModalOk}>
-            Thêm vào giỏ
+            {isQuickPurchase ? "Mua ngay" : "Thêm vào giỏ"}
           </Button>,
         ]}
       >

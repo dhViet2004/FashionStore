@@ -44,7 +44,7 @@ const Favourite = () => {
               clipRule="evenodd" 
             />
           </svg>
-          Quay lại
+          Back
         </button>
         <h1 className="text-3xl font-bold">Sản phẩm yêu thích</h1>
       </div>

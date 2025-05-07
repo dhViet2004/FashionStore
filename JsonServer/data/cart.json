@@ -64,7 +64,7 @@
       "productId": 2,
       "name": "Slim Fit Jeans",
       "price": 300000,
-      "quantity": 1,
+      "quantity": 2,
       "size": "M",
       "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
       "stock": 15,
@@ -74,6 +74,21 @@
       },
       "userId": 13,
       "id": 7
+    },
+    {
+      "productId": 3,
+      "name": "Leather Jacket",
+      "price": 290000,
+      "quantity": 1,
+      "size": "M",
+      "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-CutVai_xmzsvi.jpg",
+      "stock": 7,
+      "sizes": {
+        "size": "M",
+        "stock": 6
+      },
+      "userId": 13,
+      "id": 8
     }
   ]
 }

@@ -3,22 +3,15 @@ import BannerHeader from "../../components/BannerHeader";
 import ProductsList from "../../components/ProductsList";
 import { Modal } from 'antd';
 import { useLocation } from 'react-router-dom';
+import { useProducts } from '../../context/ProductContext';
 import './Home.css';
 
 const Home = () => {
-  const [products, setProducts] = useState([]);
   const [isAdModalVisible, setIsAdModalVisible] = useState(false);
   const location = useLocation();
+  const { getFeaturedProducts, loading } = useProducts();
 
   useEffect(() => {
-    // Fetch sản phẩm từ API
-    const fetchProducts = async () => {
-      const response = await fetch("http://localhost:3001/products");
-      const data = await response.json();
-      setProducts(data.slice(0, 8)); // Lấy 8 sản phẩm đầu tiên
-    };
-    fetchProducts();
-
     // Kiểm tra xem đã hiển thị quảng cáo trong phiên này chưa
     const hasShownAd = sessionStorage.getItem('hasShownAd');
     if (!hasShownAd && location.pathname === '/') {
@@ -30,6 +23,14 @@ const Home = () => {
   const handleCloseAd = () => {
     setIsAdModalVisible(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -64,7 +65,7 @@ const Home = () => {
         </div>
       </Modal>
       <BannerHeader />
-      <ProductsList data={products} itemsPerPage={8} />
+      <ProductsList data={getFeaturedProducts(8)} itemsPerPage={8} />
     </div>
   );
 };

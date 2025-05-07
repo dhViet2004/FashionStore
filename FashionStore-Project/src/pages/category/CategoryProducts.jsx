@@ -21,7 +21,7 @@ const CategoryProducts = ({ title, products, onBack }) => {
               clipRule="evenodd" 
             />
           </svg>
-          Quay lại
+          Back
         </button>
         <div className="flex items-center justify-between">
           <h1 className="text-3xl font-bold">{title}</h1>

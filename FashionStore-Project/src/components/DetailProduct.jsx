@@ -369,9 +369,12 @@ const DetailProduct = () => {
       {/* Nút trở về */}
       <button 
         onClick={() => navigate(-1)} 
-        className="ml-2 pl-4 pr-4 pt-2 pb-2 rounded hover:bg-gray-100 transition-all duration-300"
+        className="ml-2 pl-4 pr-4 pt-2 pb-2 rounded hover:bg-gray-200 hover:cursor-pointer transition-all duration-300 bg-gray-100"
       >
-        <FaArrowLeft className="text-xl text-gray-600 hover:text-gray-800" />
+        <span className="flex items-center gap-2 ">
+          <FaArrowLeft className="text-xl text-gray-600 hover:text-gray-800"/>
+          Back
+        </span>
       </button>
 
       <div className="flex flex-col md:flex-row items-center bg-white p-6 pt-2 rounded-lg shadow-lg mb-8 relative">
