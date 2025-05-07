@@ -1829,16 +1829,6 @@
       "id": 56
     },
     {
-      "userId": 10,
-      "items": [
-        {
-          "status": "pending",
-          "timestamp": "21:35 06/05/2025",
-          "note": "Status changed to pending"
-        }
-      ]
-    },
-    {
       "userId": 8,
       "items": [
         {
