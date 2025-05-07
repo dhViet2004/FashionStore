@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { FaTruck, FaCreditCard, FaGift, FaCheck, FaCheckCircle } from 'react-icons/fa';
 import { toast } from 'react-hot-toast';
 import { useCart } from '../hooks/useCart';
-import { Modal, Form, Input, Select, Button } from 'antd';
+import { Modal, Form, Input, Select, Button, Checkbox } from 'antd';
 
 const API_URL = 'http://localhost:3001';
 const SHIPPING_METHODS = [
@@ -170,8 +170,8 @@ export default function Checkout() {
   }, []);
 
   // Handle province change
-  const handleProvinceChange = useCallback((provinceId) => {
-    const selectedProvince = provinces.find(p => p.Id === provinceId);
+  const handleProvinceChange = useCallback((value) => {
+    const selectedProvince = provinces.find(p => p.Name === value);
     if (selectedProvince) {
       setDistricts(selectedProvince.Districts || []);
       setWards([]);
@@ -185,8 +185,8 @@ export default function Checkout() {
   }, [provinces]);
 
   // Handle district change
-  const handleDistrictChange = useCallback((districtId) => {
-    const selectedDistrict = districts.find(d => d.Id === districtId);
+  const handleDistrictChange = useCallback((value) => {
+    const selectedDistrict = districts.find(d => d.Name === value);
     if (selectedDistrict) {
       setWards(selectedDistrict.Wards || []);
       setForm(prev => ({
@@ -197,52 +197,21 @@ export default function Checkout() {
     }
   }, [districts]);
 
-  const handleSaveAddress = async () => {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) return;
-
-    try {
-      const addressData = {
-        ...form,
-        userId: user.id,
-        isDefault: shippingAddresses.length === 0 // Make first address default
-      };
-
-      if (isNewAddress) {
-        // Create new address by updating the user object
-        const response = await fetch(`${API_URL}/users/${user.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            addresses: [...shippingAddresses, addressData]
-          })
-        });
-        if (!response.ok) throw new Error('Failed to save address');
-        const updatedUser = await response.json();
-        setShippingAddresses(updatedUser.addresses || []);
-        setSelectedAddressId(addressData._id);
-      } else {
-        // Update existing address
-        const updatedAddresses = shippingAddresses.map(addr => 
-          addr._id === selectedAddressId ? addressData : addr
-        );
-        
-        const response = await fetch(`${API_URL}/users/${user.id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            addresses: updatedAddresses
-          })
-        });
-        if (!response.ok) throw new Error('Failed to update address');
-        const updatedUser = await response.json();
-        setShippingAddresses(updatedUser.addresses || []);
-      }
-      setShowAddressModal(false);
-    } catch (error) {
-      console.error('Error saving address:', error);
-      alert('Có lỗi xảy ra khi lưu địa chỉ');
-    }
+  const handleAddNewAddress = () => {
+    console.log('Adding new address...');
+    setForm({
+      name: '',
+      phone: '',
+      email: '',
+      province: '',
+      district: '',
+      ward: '',
+      address: '',
+      note: '',
+    });
+    setSelectedAddressId(null);
+    setIsNewAddress(true);
+    setShowAddressModal(true);
   };
 
   const handleSetDefaultAddress = async (addressId) => {
@@ -250,11 +219,19 @@ export default function Checkout() {
     if (!user) return;
 
     try {
-      const updatedAddresses = shippingAddresses.map(addr => ({
+      // First, get the current user data to ensure we have the latest addresses
+      const userResponse = await fetch(`${API_URL}/users/${user.id}`);
+      if (!userResponse.ok) throw new Error('Failed to fetch user data');
+      const currentUser = await userResponse.json();
+      const currentAddresses = currentUser.addresses || [];
+
+      // Set isDefault to false for all addresses, then true for the selected one
+      const updatedAddresses = currentAddresses.map(addr => ({
         ...addr,
         isDefault: addr._id === addressId
       }));
 
+      // Update the user's addresses
       const response = await fetch(`${API_URL}/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -262,14 +239,125 @@ export default function Checkout() {
           addresses: updatedAddresses
         })
       });
+      
       if (!response.ok) throw new Error('Failed to set default address');
       
       const updatedUser = await response.json();
       setShippingAddresses(updatedUser.addresses || []);
       setSelectedAddressId(addressId);
+      toast.success('Đã cập nhật địa chỉ mặc định');
     } catch (error) {
       console.error('Error setting default address:', error);
-      alert('Có lỗi xảy ra khi đặt địa chỉ mặc định');
+      toast.error('Có lỗi xảy ra khi đặt địa chỉ mặc định');
+    }
+  };
+
+  const handleSaveAddress = async (values) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm địa chỉ');
+      return;
+    }
+
+    try {
+      // First, get the current user data to ensure we have the latest addresses
+      const userResponse = await fetch(`${API_URL}/users/${user.id}`);
+      if (!userResponse.ok) throw new Error('Failed to fetch user data');
+      const currentUser = await userResponse.json();
+      const currentAddresses = currentUser.addresses || [];
+
+      // Validate form data
+      if (!values.name || !values.phone || !values.email || !values.province || !values.district || !values.ward || !values.address) {
+        toast.error('Vui lòng điền đầy đủ thông tin bắt buộc');
+        return;
+      }
+
+      // Validate phone number
+      if (!/^[0-9]{10}$/.test(values.phone)) {
+        toast.error('Số điện thoại không hợp lệ');
+        return;
+      }
+
+      // Validate email
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email)) {
+        toast.error('Email không hợp lệ');
+        return;
+      }
+
+      const addressData = {
+        _id: isNewAddress ? Date.now().toString() : selectedAddressId, // Generate a unique ID for new addresses
+        name: values.name.trim(),
+        phone: values.phone.trim(),
+        email: values.email.trim(),
+        province: values.province,
+        district: values.district,
+        ward: values.ward,
+        address: values.address.trim(),
+        note: values.note ? values.note.trim() : '',
+        userId: user.id,
+        isDefault: currentAddresses.length === 0 || values.isDefault // Make first address default or if specified
+      };
+
+      let updatedAddresses;
+      if (isNewAddress) {
+        // If this is the first address or should be default, set all others to non-default
+        if (addressData.isDefault) {
+          updatedAddresses = currentAddresses.map(addr => ({
+            ...addr,
+            isDefault: false
+          }));
+          updatedAddresses.push(addressData);
+        } else {
+          updatedAddresses = [...currentAddresses, addressData];
+        }
+      } else {
+        // Update existing address
+        updatedAddresses = currentAddresses.map(addr => {
+          if (addr._id === selectedAddressId) {
+            return { ...addr, ...addressData };
+          }
+          // If this address is being set as default, remove default from others
+          if (addressData.isDefault) {
+            return { ...addr, isDefault: false };
+          }
+          return addr;
+        });
+      }
+
+      // Update user's addresses in database
+      const response = await fetch(`${API_URL}/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          addresses: updatedAddresses
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Server response:', errorData);
+        throw new Error('Failed to save address');
+      }
+
+      const updatedUser = await response.json();
+      setShippingAddresses(updatedUser.addresses || []);
+      setSelectedAddressId(addressData._id);
+      setShowAddressModal(false);
+      setIsNewAddress(false);
+      toast.success(isNewAddress ? 'Thêm địa chỉ thành công' : 'Cập nhật địa chỉ thành công');
+    } catch (error) {
+      console.error('Error saving address:', error);
+      toast.error('Có lỗi xảy ra khi lưu địa chỉ');
+    }
+  };
+
+  const handleSelectAddress = (addressId) => {
+    setSelectedAddressId(addressId);
+    const selectedAddress = shippingAddresses.find(addr => addr._id === addressId);
+    if (selectedAddress) {
+      setForm(selectedAddress);
     }
   };
 
@@ -280,6 +368,11 @@ export default function Checkout() {
     try {
       const updatedAddresses = shippingAddresses.filter(addr => addr._id !== addressId);
       
+      // Nếu xóa địa chỉ mặc định và còn địa chỉ khác, đặt địa chỉ đầu tiên làm mặc định
+      if (shippingAddresses.find(addr => addr._id === addressId)?.isDefault && updatedAddresses.length > 0) {
+        updatedAddresses[0].isDefault = true;
+      }
+      
       const response = await fetch(`${API_URL}/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -287,6 +380,7 @@ export default function Checkout() {
           addresses: updatedAddresses
         })
       });
+      
       if (!response.ok) throw new Error('Failed to delete address');
       
       const updatedUser = await response.json();
@@ -311,9 +405,10 @@ export default function Checkout() {
           });
         }
       }
+      toast.success('Đã xóa địa chỉ thành công');
     } catch (error) {
       console.error('Error deleting address:', error);
-      alert('Có lỗi xảy ra khi xóa địa chỉ');
+      toast.error('Có lỗi xảy ra khi xóa địa chỉ');
     }
   };
 
@@ -321,21 +416,6 @@ export default function Checkout() {
     setForm(address);
     setSelectedAddressId(address._id);
     setIsNewAddress(false);
-    setShowAddressModal(true);
-  };
-
-  const handleAddNewAddress = () => {
-    setForm({
-      name: '',
-      phone: '',
-      email: '',
-      province: '',
-      district: '',
-      address: '',
-      note: '',
-    });
-    setSelectedAddressId(null);
-    setIsNewAddress(true);
     setShowAddressModal(true);
   };
 
@@ -584,79 +664,38 @@ export default function Checkout() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!validateOrderConditions()) {
-      setShowErrorModal(true);
-      return;
-    }
+    if (!validateForm()) return;
+    if (!validateOrderConditions()) return;
 
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (!user) {
-      setErrorMessages(['Vui lòng đăng nhập để đặt hàng']);
-      setShowErrorModal(true);
-      return;
-    }
-
-    // Kiểm tra nếu là phương thức thanh toán trực tuyến
-    if (payment.value === 'qr' || payment.value === 'bank' || payment.value === 'e-wallet' || payment.value === 'card') {
-      setShowPaymentModal(true);
-      return;
-    }
-
-    // Nếu là COD thì tiếp tục đặt hàng
+    setIsSubmitting(true);
     try {
-      setIsProcessing(true);
-      const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
-      const existingOrders = await existingOrderResponse.json();
-      
-      if (existingOrders.length >= 5) {
-        setErrorMessages(['Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.']);
-        setShowErrorModal(true);
-        setIsProcessing(false);
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        toast.error('Vui lòng đăng nhập để đặt hàng');
         return;
       }
 
-      setLoading(true);
+      const selectedAddress = shippingAddresses.find(addr => addr._id === selectedAddressId);
+      if (!selectedAddress) {
+        toast.error('Vui lòng chọn địa chỉ giao hàng');
+        return;
+      }
+
       const orderData = {
         userId: user.id,
-        items: order.items.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size,
-          imageUrl: item.imageUrl
-        })),
-        total: total,
-        subtotal: subtotal,
-        shipping: {
-          method: shipping.value,
-          fee: shipping.fee,
-          address: {
-            name: form.name,
-            phone: form.phone,
-            email: form.email,
-            province: form.province,
-            district: form.district,
-            ward: form.ward,
-            address: form.address,
-            note: form.note
-          }
-        },
-        payment: {
-          method: payment.value,
-          status: 'Completed' // Đã thanh toán vì là thanh toán trực tuyến
-        },
-        voucher: appliedVoucher ? {
-          code: appliedVoucher.code,
-          discount: discount
-        } : null,
+        items: order.items,
+        shippingAddress: selectedAddress,
+        shippingMethod: shipping,
+        paymentMethod: payment,
+        voucher: appliedVoucher,
+        subtotal,
+        shippingFee: shipping.fee,
+        discount,
+        total,
         status: 'pending',
-        createdAt: formatDate(new Date())
+        createdAt: new Date().toISOString()
       };
 
-      console.log('Sending order data:', orderData);
-
-      // Lưu đơn hàng vào JSON server
       const response = await fetch(`${API_URL}/orders`, {
         method: 'POST',
         headers: {
@@ -665,230 +704,35 @@ export default function Checkout() {
         body: JSON.stringify(orderData)
       });
 
-      if (response.ok) {
-        const savedOrder = await response.json();
-        console.log('Order saved successfully:', savedOrder);
-        setOrderId(savedOrder.id);
-        setOrderSuccess(true);
-        
-        // Cập nhật số lượng sản phẩm
-        for (const item of order.items) {
-          try {
-            // Lấy thông tin sản phẩm hiện tại
-            const productResponse = await fetch(`${API_URL}/products/${item.id}`);
-            if (!productResponse.ok) throw new Error('Failed to fetch product');
-            const product = await productResponse.json();
-
-            // Cập nhật số lượng sản phẩm
-            const updatedQuantity = product.quantity - item.quantity;
-            const updateProductResponse = await fetch(`${API_URL}/products/${item.id}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                quantity: updatedQuantity
-              })
-            });
-
-            if (!updateProductResponse.ok) {
-              console.error(`Failed to update quantity for product ${item.id}`);
-            }
-          } catch (error) {
-            console.error(`Error updating product quantity for ${item.id}:`, error);
-          }
-        }
-        
-        // Nếu có áp dụng voucher, thêm userId vào usedBy của voucher
-        if (appliedVoucher) {
-          try {
-            const voucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`);
-            if (!voucherResponse.ok) throw new Error('Failed to fetch voucher');
-            
-            const voucher = await voucherResponse.json();
-            const updatedUsedBy = [...(voucher.usedBy || []), user.id];
-            
-            const updateVoucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                usedBy: updatedUsedBy
-              })
-            });
-            
-            if (!updateVoucherResponse.ok) {
-              console.error('Failed to update voucher usedBy');
-            }
-          } catch (error) {
-            console.error('Error updating voucher usedBy:', error);
-          }
-        }
-        
-        // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
-        for (const itemId of order.items.map(item => item.id)) {
-          await fetch(`${API_URL}/cart/${itemId}?userId=${user.id}`, { method: 'DELETE' });
-        }
-        
-        // Cập nhật số lượng giỏ hàng ngay lập tức
-        updateCountImmediately(0);
-        toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
-      } else {
-        throw new Error('Failed to place order');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to place order');
       }
+
+      const newOrder = await response.json();
+      setOrderId(newOrder.id);
+      setOrderSuccess(true);
+
+      // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+      for (const item of order.items) {
+        try {
+          await fetch(`${API_URL}/cart/${item.id}?userId=${user.id}`, { 
+            method: 'DELETE' 
+          });
+        } catch (error) {
+          console.error(`Error removing item ${item.id} from cart:`, error);
+        }
+      }
+
+      // Cập nhật số lượng giỏ hàng
+      updateCartCount(0);
+      updateCountImmediately(0);
+      toast.success('Đặt hàng thành công!');
     } catch (error) {
       console.error('Error placing order:', error);
-      setErrorMessages(['Không thể đặt hàng. Vui lòng thử lại sau.']);
-      setShowErrorModal(true);
+      toast.error('Có lỗi xảy ra khi đặt hàng');
     } finally {
-      setLoading(false);
-      setIsProcessing(false);
-    }
-  };
-
-  // Thêm hàm xử lý xác nhận thanh toán
-  const handleConfirmPayment = async () => {
-    setShowPaymentModal(false);
-    try {
-      setIsProcessing(true);
-      const existingOrderResponse = await fetch(`${API_URL}/orders?userId=${user.id}&status=pending`);
-      const existingOrders = await existingOrderResponse.json();
-      
-      if (existingOrders.length >= 5) {
-        setErrorMessages(['Bạn đã có 5 đơn hàng đang xử lý. Vui lòng đợi các đơn hàng hiện tại hoàn thành.']);
-        setShowErrorModal(true);
-        setIsProcessing(false);
-        return;
-      }
-
-      setLoading(true);
-      const orderData = {
-        userId: user.id,
-        items: order.items.map(item => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          size: item.size,
-          imageUrl: item.imageUrl
-        })),
-        total: total,
-        subtotal: subtotal,
-        shipping: {
-          method: shipping.value,
-          fee: shipping.fee,
-          address: {
-            name: form.name,
-            phone: form.phone,
-            email: form.email,
-            province: form.province,
-            district: form.district,
-            ward: form.ward,
-            address: form.address,
-            note: form.note
-          }
-        },
-        payment: {
-          method: payment.value,
-          status: 'Completed' // Đã thanh toán vì là thanh toán trực tuyến
-        },
-        voucher: appliedVoucher ? {
-          code: appliedVoucher.code,
-          discount: discount
-        } : null,
-        status: 'pending',
-        createdAt: formatDate(new Date())
-      };
-
-      // Lưu đơn hàng vào JSON server
-      const response = await fetch(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (response.ok) {
-        const savedOrder = await response.json();
-        console.log('Order saved successfully:', savedOrder);
-        setOrderId(savedOrder.id);
-        setOrderSuccess(true);
-        
-        // Cập nhật số lượng sản phẩm
-        for (const item of order.items) {
-          try {
-            // Lấy thông tin sản phẩm hiện tại
-            const productResponse = await fetch(`${API_URL}/products/${item.id}`);
-            if (!productResponse.ok) throw new Error('Failed to fetch product');
-            const product = await productResponse.json();
-
-            // Cập nhật số lượng sản phẩm
-            const updatedQuantity = product.quantity - item.quantity;
-            const updateProductResponse = await fetch(`${API_URL}/products/${item.id}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                quantity: updatedQuantity
-              })
-            });
-
-            if (!updateProductResponse.ok) {
-              console.error(`Failed to update quantity for product ${item.id}`);
-            }
-          } catch (error) {
-            console.error(`Error updating product quantity for ${item.id}:`, error);
-          }
-        }
-        
-        // Nếu có áp dụng voucher, thêm userId vào usedBy của voucher
-        if (appliedVoucher) {
-          try {
-            const voucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`);
-            if (!voucherResponse.ok) throw new Error('Failed to fetch voucher');
-            
-            const voucher = await voucherResponse.json();
-            const updatedUsedBy = [...(voucher.usedBy || []), user.id];
-            
-            const updateVoucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                usedBy: updatedUsedBy
-              })
-            });
-            
-            if (!updateVoucherResponse.ok) {
-              console.error('Failed to update voucher usedBy');
-            }
-          } catch (error) {
-            console.error('Error updating voucher usedBy:', error);
-          }
-        }
-        
-        // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
-        for (const itemId of order.items.map(item => item.id)) {
-          await fetch(`${API_URL}/cart/${itemId}?userId=${user.id}`, { method: 'DELETE' });
-        }
-        
-        // Cập nhật số lượng giỏ hàng ngay lập tức
-        updateCountImmediately(0);
-        toast.success('Đặt hàng thành công! Cảm ơn bạn đã mua hàng.');
-      } else {
-        throw new Error('Failed to place order');
-      }
-    } catch (error) {
-      console.error('Error placing order:', error);
-      setErrorMessages(['Không thể đặt hàng. Vui lòng thử lại sau.']);
-      setShowErrorModal(true);
-    } finally {
-      setLoading(false);
-      setIsProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -907,7 +751,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-10 max-w-6xl">
+    <div className="container mx-auto px-4 py-8">
       {/* Error Modal */}
       <Modal
         title="Không thể đặt hàng"
@@ -1091,85 +935,72 @@ export default function Checkout() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Thông tin giao hàng</h3>
               <button
-                onClick={handleAddNewAddress}
-                className="px-4 py-2 text-blue-600 hover:text-blue-700 font-medium add-address-btn"
+                onClick={() => setShowAddressModal(true)}
+                className="text-blue-600 hover:text-blue-700 font-medium"
               >
-                Thêm địa chỉ mới
+                Quản lý địa chỉ
               </button>
             </div>
             
-            {/* Address List */}
-            <div className="space-y-4 mb-4">
-              {shippingAddresses.map(address => (
-                <div
-                  key={`address-${address._id}`}
-                  className={`p-4 border rounded-lg ${
-                    selectedAddressId === address._id ? 'border-blue-500 bg-blue-50' : ''
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Họ tên:</span>
-                        <span>{address.name}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Số điện thoại:</span>
-                        <span>{address.phone}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Email:</span>
-                        <span>{address.email}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">Địa chỉ:</span>
-                        <span>{`${address.address}, ${address.district}, ${address.province}`}</span>
-                      </div>
-                      {address.note && (
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">Ghi chú:</span>
-                          <span>{address.note}</span>
+            {/* Default Address Display */}
+            {shippingAddresses.length > 0 ? (
+              <div className="space-y-4">
+                {shippingAddresses.map(address => (
+                  address.isDefault && (
+                    <div
+                      key={`address-${address._id}`}
+                      className="p-4 border border-blue-500 rounded-lg bg-blue-50"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="space-y-2 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Họ tên:</span>
+                            <span>{address.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Số điện thoại:</span>
+                            <span>{address.phone}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Email:</span>
+                            <span>{address.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Địa chỉ:</span>
+                            <span>{`${address.address}, ${address.ward}, ${address.district}, ${address.province}`}</span>
+                          </div>
+                          {address.note && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Ghi chú:</span>
+                              <span>{address.note}</span>
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="flex gap-2 address-actions ml-4">
+                          <button
+                            onClick={() => handleEditAddress(address)}
+                            className="edit-btn hover:text-blue-600"
+                          >
+                            Sửa
+                          </button>
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-blue-600">
+                        Địa chỉ mặc định
+                      </div>
                     </div>
-                    <div className="flex gap-2 address-actions">
-                      {!address.isDefault && (
-                        <button
-                          onClick={() => handleSetDefaultAddress(address._id)}
-                          className="default-btn hover:text-green-600"
-                        >
-                          Đặt làm mặc định
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleEditAddress(address)}
-                        className="edit-btn hover:text-blue-600"
-                      >
-                        Sửa
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAddress(address._id)}
-                        className="delete-btn hover:text-red-600"
-                      >
-                        Xóa
-                      </button>
-                    </div>
-                  </div>
-                  {address.isDefault && (
-                    <div className="mt-2 text-sm text-blue-600">
-                      Địa chỉ mặc định
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {shippingAddresses.length === 0 && (
+                  )
+                ))}
+              </div>
+            ) : (
               <div className="text-center py-4">
                 <p className="text-red-500 mb-2">Bạn chưa có địa chỉ giao hàng nào</p>
                 <button
-                  onClick={handleAddNewAddress}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 add-address-btn"
+                  onClick={() => {
+                    setShowAddressModal(true);
+                    setIsNewAddress(true);
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Thêm địa chỉ ngay
                 </button>
@@ -1487,7 +1318,7 @@ export default function Checkout() {
 
       {/* Address Modal */}
       <Modal
-        title={isNewAddress ? 'Thêm địa chỉ mới' : 'Chỉnh sửa địa chỉ'}
+        title="Quản lý địa chỉ giao hàng"
         open={showAddressModal}
         onCancel={() => setShowAddressModal(false)}
         footer={null}
@@ -1496,188 +1327,230 @@ export default function Checkout() {
         style={{ top: 20 }}
         bodyStyle={{ padding: '24px' }}
       >
-        <style>
-          {`
-            .address-modal .ant-modal-content {
-              border-radius: 12px;
-              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            }
-            .address-modal .ant-modal-header {
-              border-bottom: 2px solid #f0f0f0;
-              padding: 16px 24px;
-            }
-            .address-modal .ant-modal-title {
-              font-size: 20px;
-              font-weight: 600;
-            }
-            .address-modal .ant-form-item-label > label {
-              font-weight: 500;
-            }
-            .address-modal .ant-input,
-            .address-modal .ant-select-selector {
-              border-radius: 8px !important;
-              border: 1px solid #d9d9d9;
-              cursor: text;
-            }
-            .address-modal .ant-input:hover,
-            .address-modal .ant-select-selector:hover {
-              border-color: #40a9ff !important;
-            }
-            .address-modal .ant-input:focus,
-            .address-modal .ant-select-focused .ant-select-selector {
-              border-color: #1890ff !important;
-              box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1) !important;
-            }
-            .address-modal .ant-btn {
-              border-radius: 8px;
-              height: 40px;
-              font-weight: 500;
-              cursor: pointer;
-            }
-            .address-modal .ant-btn-primary {
-              background: #1890ff;
-              box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
-            }
-            .address-modal .ant-btn-primary:hover {
-              background: #40a9ff;
-              box-shadow: 0 4px 12px rgba(24, 144, 255, 0.45);
-            }
-
-            /* Address management styles */
-            .address-actions button {
-              cursor: pointer;
-              transition: all 0.2s ease;
-            }
-            .address-actions button:hover {
-              opacity: 0.8;
-            }
-            .address-actions .edit-btn {
-              color: #1890ff;
-            }
-            .address-actions .delete-btn {
-              color: #ff4d4f;
-            }
-            .address-actions .default-btn {
-              color: #52c41a;
-            }
-            .add-address-btn {
-              cursor: pointer;
-              transition: all 0.2s ease;
-            }
-            .add-address-btn:hover {
-              opacity: 0.8;
-            }
-          `}
-        </style>
-        <Form
-          layout="vertical"
-          initialValues={form}
-          onFinish={handleSaveAddress}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item
-              name="name"
-              label="Họ tên"
-              rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+        <div className="space-y-4">
+          {/* Add New Address Button */}
+          <div className="flex justify-end mb-4">
+            <button
+              onClick={() => {
+                setIsNewAddress(true);
+                setForm({
+                  name: '',
+                  phone: '',
+                  email: '',
+                  province: '',
+                  district: '',
+                  ward: '',
+                  address: '',
+                  note: '',
+                });
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              <Input placeholder="Nhập họ tên" />
-            </Form.Item>
-
-            <Form.Item
-              name="phone"
-              label="Số điện thoại"
-              rules={[
-                { required: true, message: 'Vui lòng nhập số điện thoại' },
-                { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
-              ]}
-            >
-              <Input placeholder="Nhập số điện thoại" />
-            </Form.Item>
-
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: 'Vui lòng nhập email' },
-                { type: 'email', message: 'Email không hợp lệ' }
-              ]}
-            >
-              <Input placeholder="Nhập email" />
-            </Form.Item>
-
-            <Form.Item
-              name="province"
-              label="Tỉnh/Thành phố"
-              rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
-            >
-              <Select
-                placeholder="Chọn tỉnh/thành phố"
-                onChange={handleProvinceChange}
-                options={provinces.map(province => ({
-                  value: province.Id,
-                  label: province.Name
-                }))}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="district"
-              label="Quận/Huyện"
-              rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
-            >
-              <Select
-                placeholder="Chọn quận/huyện"
-                onChange={handleDistrictChange}
-                options={districts.map(district => ({
-                  value: district.Id,
-                  label: district.Name
-                }))}
-                disabled={!form.province}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="ward"
-              label="Phường/Xã"
-              rules={[{ required: true, message: 'Vui lòng chọn phường/xã' }]}
-            >
-              <Select
-                placeholder="Chọn phường/xã"
-                options={wards.map(ward => ({
-                  value: ward.Id,
-                  label: ward.Name
-                }))}
-                disabled={!form.district}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="address"
-              label="Địa chỉ cụ thể"
-              rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
-              className="md:col-span-2"
-            >
-              <Input placeholder="Nhập địa chỉ cụ thể" />
-            </Form.Item>
-
-            <Form.Item
-              name="note"
-              label="Ghi chú"
-              className="md:col-span-2"
-            >
-              <Input.TextArea rows={3} placeholder="Nhập ghi chú (nếu có)" />
-            </Form.Item>
+              Thêm địa chỉ mới
+            </button>
           </div>
 
-          <div className="flex justify-end gap-4 mt-6">
-            <Button onClick={() => setShowAddressModal(false)}>
-              Hủy
-            </Button>
-            <Button type="primary" htmlType="submit">
-              {isNewAddress ? 'Thêm địa chỉ' : 'Lưu thay đổi'}
-            </Button>
-          </div>
-        </Form>
+          {/* Address List in Modal */}
+          {shippingAddresses.map(address => (
+            <div
+              key={`modal-address-${address._id}`}
+              className={`p-4 border rounded-lg transition-all duration-200 ${
+                selectedAddressId === address._id ? 'border-blue-500 bg-blue-50' : 'hover:border-blue-300'
+              }`}
+              onClick={() => handleSelectAddress(address._id)}
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Họ tên:</span>
+                    <span>{address.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Số điện thoại:</span>
+                    <span>{address.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Email:</span>
+                    <span>{address.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Địa chỉ:</span>
+                    <span>{`${address.address}, ${address.ward}, ${address.district}, ${address.province}`}</span>
+                  </div>
+                  {address.note && (
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Ghi chú:</span>
+                      <span>{address.note}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 address-actions ml-4">
+                  {!address.isDefault && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetDefaultAddress(address._id);
+                      }}
+                      className="default-btn hover:text-green-600"
+                    >
+                      Đặt làm mặc định
+                    </button>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditAddress(address);
+                    }}
+                    className="edit-btn hover:text-blue-600"
+                  >
+                    Sửa
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAddress(address._id);
+                    }}
+                    className="delete-btn hover:text-red-600"
+                  >
+                    Xóa
+                  </button>
+                </div>
+              </div>
+              {address.isDefault && (
+                <div className="mt-2 text-sm text-blue-600">
+                  Địa chỉ mặc định
+                </div>
+              )}
+            </div>
+          ))}
+
+          {/* Add New Address Form */}
+          {isNewAddress && (
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-semibold mb-4">
+                Thêm địa chỉ mới
+              </h3>
+              <Form
+                layout="vertical"
+                initialValues={form}
+                onFinish={handleSaveAddress}
+                validateTrigger={['onChange', 'onBlur']}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Form.Item
+                    name="name"
+                    label="Họ tên"
+                    rules={[{ required: true, message: 'Vui lòng nhập họ tên' }]}
+                  >
+                    <Input placeholder="Nhập họ tên" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="phone"
+                    label="Số điện thoại"
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập số điện thoại' },
+                      { pattern: /^[0-9]{10}$/, message: 'Số điện thoại không hợp lệ' }
+                    ]}
+                  >
+                    <Input placeholder="Nhập số điện thoại" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="email"
+                    label="Email"
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập email' },
+                      { type: 'email', message: 'Email không hợp lệ' }
+                    ]}
+                  >
+                    <Input placeholder="Nhập email" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="province"
+                    label="Tỉnh/Thành phố"
+                    rules={[{ required: true, message: 'Vui lòng chọn tỉnh/thành phố' }]}
+                  >
+                    <Select
+                      placeholder="Chọn tỉnh/thành phố"
+                      onChange={handleProvinceChange}
+                      options={provinces.map(province => ({
+                        value: province.Name,
+                        label: province.Name
+                      }))}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="district"
+                    label="Quận/Huyện"
+                    rules={[{ required: true, message: 'Vui lòng chọn quận/huyện' }]}
+                  >
+                    <Select
+                      placeholder="Chọn quận/huyện"
+                      onChange={handleDistrictChange}
+                      options={districts.map(district => ({
+                        value: district.Name,
+                        label: district.Name
+                      }))}
+                      disabled={!form.province}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="ward"
+                    label="Phường/Xã"
+                    rules={[{ required: true, message: 'Vui lòng chọn phường/xã' }]}
+                  >
+                    <Select
+                      placeholder="Chọn phường/xã"
+                      options={wards.map(ward => ({
+                        value: ward.Name,
+                        label: ward.Name
+                      }))}
+                      disabled={!form.district}
+                    />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="address"
+                    label="Địa chỉ cụ thể"
+                    rules={[{ required: true, message: 'Vui lòng nhập địa chỉ cụ thể' }]}
+                    className="md:col-span-2"
+                  >
+                    <Input placeholder="Nhập địa chỉ cụ thể" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="note"
+                    label="Ghi chú"
+                    className="md:col-span-2"
+                  >
+                    <Input.TextArea rows={3} placeholder="Nhập ghi chú (nếu có)" />
+                  </Form.Item>
+
+                  <Form.Item
+                    name="isDefault"
+                    valuePropName="checked"
+                    className="md:col-span-2"
+                  >
+                    <Checkbox>Đặt làm địa chỉ mặc định</Checkbox>
+                  </Form.Item>
+                </div>
+
+                <div className="flex justify-end gap-4 mt-6">
+                  <Button onClick={() => setShowAddressModal(false)}>
+                    Hủy
+                  </Button>
+                  <Button type="primary" htmlType="submit">
+                    {isNewAddress ? 'Thêm địa chỉ' : 'Lưu thay đổi'}
+                  </Button>
+                </div>
+              </Form>
+            </div>
+          )}
+        </div>
       </Modal>
 
       {/* Payment QR Modal */}
@@ -1692,7 +1565,7 @@ export default function Checkout() {
           <Button 
             key="confirm" 
             type="primary" 
-            onClick={handleConfirmPayment}
+            onClick={handlePlaceOrder}
           >
             Xác nhận thanh toán
           </Button>
