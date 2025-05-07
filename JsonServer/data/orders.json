@@ -1922,9 +1922,26 @@
         "code": "30THANG4",
         "discount": 10
       },
-      "status": "pending",
+      "status": "delivered",
       "createdAt": "00:45 07/05/2025",
-      "id": 62
+      "id": 62,
+      "statusHistory": [
+        {
+          "status": "delivered",
+          "timestamp": "15:43 07/05/2025",
+          "note": "Status changed to delivered"
+        },
+        {
+          "status": "shipped",
+          "timestamp": "15:43 07/05/2025",
+          "note": "Status changed to shipped"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "15:46 07/05/2025",
+          "note": "Status changed to delivered"
+        }
+      ]
     },
     {
       "userId": 8,
@@ -2002,7 +2019,30 @@
       "total": 498000,
       "voucher": null,
       "createdAt": "2025-05-07T04:48:32.144Z",
-      "id": 64
+      "id": 64,
+      "status": "processing",
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "15:36 07/05/2025",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "processing",
+          "timestamp": "15:36 07/05/2025",
+          "note": "Status changed to processing"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "15:43 07/05/2025",
+          "note": "Status changed to delivered"
+        },
+        {
+          "status": "processing",
+          "timestamp": "15:44 07/05/2025",
+          "note": "Status changed to processing"
+        }
+      ]
     }
   ]
 }
