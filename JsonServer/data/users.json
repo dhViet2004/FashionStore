@@ -124,14 +124,28 @@
       "id": 10,
       "addresses": [
         {
-          "name": "Luong Minh Tan",
+          "_id": "1746595657697",
+          "name": "Lương Minh Tân",
           "phone": "0852997990",
-          "email": "luogtan204@gmail.com",
-          "province": "Tỉnh Hoà Bình",
-          "district": "Huyện Cao Phong",
-          "address": "ddd",
-          "note": "",
-          "ward": "Xã Thung Nai",
+          "email": "luongtan204@gmail.com",
+          "province": "Tỉnh Hà Giang",
+          "district": "Huyện Quản Bạ",
+          "ward": "Xã Tùng Vài",
+          "address": "Tân Trụ",
+          "note": "dd",
+          "userId": 10,
+          "isDefault": false
+        },
+        {
+          "_id": "1746595720408",
+          "name": "Lương Minh Tân",
+          "phone": "0852997990",
+          "email": "luongtan204@gmail.com",
+          "province": "Tỉnh Hà Giang",
+          "district": "Huyện Quản Bạ",
+          "ward": "Xã Tùng Vài",
+          "address": "Tân Trụ",
+          "note": "dd",
           "userId": 10,
           "isDefault": true
         }
