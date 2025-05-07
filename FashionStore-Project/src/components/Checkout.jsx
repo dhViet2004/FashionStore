@@ -105,6 +105,21 @@ export default function Checkout() {
     fetchProvinces();
   }, []);
 
+  // Log order details when component mounts
+  useEffect(() => {
+    if (order) {
+      console.log('=== Checkout Order Details ===');
+      console.log('Order Items:', order.items.map(item => ({
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price
+      })));
+      console.log('=== End Checkout Order Details ===\n');
+    }
+  }, [order]);
+
   // Fetch vouchers
   const fetchVouchers = useCallback(async (userId) => {
     try {
@@ -632,7 +647,7 @@ export default function Checkout() {
     return isValid;
   };
 
-  const validateOrderConditions = () => {
+  const validateOrderConditions = async () => {
     const errors = [];
     
     // Kiểm tra form
@@ -650,6 +665,28 @@ export default function Checkout() {
       errors.push('Đang xử lý đơn hàng, vui lòng đợi');
     }
 
+    // Kiểm tra stock cho từng sản phẩm
+    for (const item of order.items) {
+      try {
+        const productResponse = await fetch(`${API_URL}/products/${item.id}`);
+        if (!productResponse.ok) throw new Error('Failed to fetch product');
+        const product = await productResponse.json();
+        
+        const sizeStock = product.sizes.find(s => s.size === item.size);
+        if (!sizeStock) {
+          errors.push(`Sản phẩm ${product.name} không có size ${item.size}`);
+          continue;
+        }
+
+        if (sizeStock.stock < item.quantity) {
+          errors.push(`Sản phẩm ${product.name} size ${item.size} chỉ còn ${sizeStock.stock} sản phẩm`);
+        }
+      } catch (error) {
+        console.error('Error checking stock:', error);
+        errors.push(`Không thể kiểm tra stock cho sản phẩm ${item.name}`);
+      }
+    }
+
     // Kiểm tra voucher nếu có
     if (appliedVoucher) {
       const orderTotal = subtotal + shipping.fee;
@@ -665,7 +702,57 @@ export default function Checkout() {
 
   const handlePlaceOrder = async () => {
     if (!validateForm()) return;
-    if (!validateOrderConditions()) return;
+    
+    // Log items before stock check
+    console.log('=== Items to be ordered ===');
+    order.items.forEach(item => {
+      console.log('Order Item:', {
+        id: item.id,
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity,
+        price: item.price
+      });
+    });
+    console.log('=== End Items to be ordered ===\n');
+    
+    // Kiểm tra stock trước khi đặt hàng
+    const stockErrors = [];
+    for (const item of order.items) {
+      try {
+        console.log(`Checking stock for item ID: ${item.id}`);
+        const productResponse = await fetch(`${API_URL}/products/${item.id}`);
+        if (!productResponse.ok) throw new Error('Failed to fetch product');
+        const product = await productResponse.json();
+        
+        console.log('Product details from server:', {
+          id: product.id,
+          name: product.name,
+          sizes: product.sizes
+        });
+        
+        const sizeStock = product.sizes.find(s => s.size === item.size);
+        if (!sizeStock) {
+          stockErrors.push(`Sản phẩm ${product.name} không có size ${item.size}`);
+          continue;
+        }
+
+        if (sizeStock.stock < item.quantity) {
+          stockErrors.push(`Sản phẩm ${product.name} size ${item.size} chỉ còn ${sizeStock.stock} sản phẩm`);
+        }
+      } catch (error) {
+        console.error('Error checking stock:', error);
+        stockErrors.push(`Không thể kiểm tra stock cho sản phẩm ${item.name}`);
+      }
+    }
+
+    if (stockErrors.length > 0) {
+      setErrorMessages(stockErrors);
+      setShowErrorModal(true);
+      return;
+    }
+
+    if (!(await validateOrderConditions())) return;
 
     setIsSubmitting(true);
     try {
@@ -693,7 +780,14 @@ export default function Checkout() {
         discount,
         total,
         status: 'pending',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toLocaleString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour12: false
+        }).replace(',', '')
       };
 
       const response = await fetch(`${API_URL}/orders`, {
@@ -713,16 +807,159 @@ export default function Checkout() {
       setOrderId(newOrder.id);
       setOrderSuccess(true);
 
-      // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+      // Update product stock
       for (const item of order.items) {
         try {
-          await fetch(`${API_URL}/cart/${item.id}?userId=${user.id}`, { 
-            method: 'DELETE' 
+          console.log('=== Starting stock update for item ===');
+          console.log('Item details:', {
+            id: item.id,
+            name: item.name,
+            size: item.size,
+            quantity: item.quantity
           });
+          
+          // Get current product data
+          const productResponse = await fetch(`${API_URL}/products/${item.id}`);
+          if (!productResponse.ok) {
+            throw new Error(`Failed to fetch product: ${productResponse.statusText}`);
+          }
+          const product = await productResponse.json();
+          
+          // Log product details for debugging
+          console.log('Fetched product details:', {
+            id: product.id,
+            name: product.name,
+            sizes: product.sizes
+          });
+
+          // Verify product exists and has required data
+          if (!product || !product.id || !product.name || !product.sizes) {
+            throw new Error(`Invalid product data received for ID ${item.id}`);
+          }
+
+          // Find the size to update
+          const sizeToUpdate = product.sizes.find(s => s.size === item.size);
+          if (!sizeToUpdate) {
+            throw new Error(`Size ${item.size} not found in product ${product.name}`);
+          }
+
+          // Update size stock
+          const updatedSizes = product.sizes.map(size => {
+            if (size.size === item.size) {
+              const newStock = Math.max(0, size.stock - item.quantity);
+              console.log(`Updating size ${size.size}:`, {
+                oldStock: size.stock,
+                quantity: item.quantity,
+                newStock: newStock
+              });
+              return {
+                ...size,
+                stock: newStock
+              };
+            }
+            return size;
+          });
+
+          // Calculate new total stock
+          const newTotalStock = updatedSizes.reduce((sum, size) => sum + size.stock, 0);
+          console.log('Stock calculation:', {
+            oldTotalStock: product.stock,
+            newTotalStock: newTotalStock,
+            updatedSizes: updatedSizes
+          });
+
+          // Update product with new stock
+          console.log('Sending update request to server...');
+          const updateResponse = await fetch(`${API_URL}/products/${item.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              sizes: updatedSizes,
+              stock: newTotalStock
+            })
+          });
+
+          if (!updateResponse.ok) {
+            const errorData = await updateResponse.json();
+            console.error('Server response:', errorData);
+            throw new Error(`Failed to update product stock: ${updateResponse.statusText}`);
+          }
+
+          const updatedProduct = await updateResponse.json();
+          console.log('Stock update successful:', {
+            productId: item.id,
+            newTotalStock: updatedProduct.stock,
+            newSizes: updatedProduct.sizes
+          });
+
+          // Verify the update
+          const verifyResponse = await fetch(`${API_URL}/products/${item.id}`);
+          if (!verifyResponse.ok) {
+            throw new Error(`Failed to verify update: ${verifyResponse.statusText}`);
+          }
+          const verifiedProduct = await verifyResponse.json();
+          
+          // Verify stock was updated correctly
+          const verifiedSize = verifiedProduct.sizes.find(s => s.size === item.size);
+          if (!verifiedSize || verifiedSize.stock !== sizeToUpdate.stock - item.quantity) {
+            throw new Error(`Stock verification failed: Expected ${sizeToUpdate.stock - item.quantity}, got ${verifiedSize?.stock}`);
+          }
+
+          console.log('Verification after update:', {
+            productId: item.id,
+            verifiedStock: verifiedProduct.stock,
+            verifiedSizes: verifiedProduct.sizes
+          });
+
+          console.log('=== Stock update completed ===\n');
+
         } catch (error) {
-          console.error(`Error removing item ${item.id} from cart:`, error);
+          console.error('=== Error in stock update ===');
+          console.error('Error details:', {
+            productId: item.id,
+            error: error.message,
+            itemDetails: {
+              name: item.name,
+              size: item.size,
+              quantity: item.quantity
+            }
+          });
+          console.error('=== End of error log ===\n');
+          throw error;
         }
       }
+
+      // Xóa các sản phẩm đã đặt hàng khỏi giỏ hàng
+      console.log('=== Starting cart cleanup ===');
+      for (const item of order.items) {
+        try {
+          // Sử dụng cartItemId để xóa item khỏi giỏ hàng
+          const cartItemId = item.cartItemId;
+          
+          console.log('Deleting cart item:', {
+            cartItemId: cartItemId,
+            productId: item.id,
+            name: item.name,
+            size: item.size,
+            quantity: item.quantity
+          });
+          
+          const deleteResponse = await fetch(`${API_URL}/cart/${cartItemId}?userId=${user.id}`, { 
+            method: 'DELETE' 
+          });
+          
+          if (!deleteResponse.ok) {
+            console.error(`Failed to delete cart item ${cartItemId}`);
+          } else {
+            console.log(`Successfully deleted cart item ${cartItemId}`);
+          }
+        } catch (error) {
+          console.error(`Error removing item from cart:`, error);
+        }
+      }
+      console.log('=== Cart cleanup completed ===\n');
 
       // Cập nhật số lượng giỏ hàng
       updateCartCount(0);
@@ -765,7 +1002,11 @@ export default function Checkout() {
         width={500}
         className="error-modal"
         style={{ top: 20 }}
-        bodyStyle={{ padding: '24px' }}
+        styles={{
+          body: {
+            padding: '24px'
+          }
+        }}
       >
         <style>
           {`
@@ -1222,7 +1463,11 @@ export default function Checkout() {
           width={500}
           className="voucher-modal"
           style={{ top: 20 }}
-          bodyStyle={{ padding: '24px' }}
+          styles={{
+            body: {
+              padding: '24px'
+            }
+          }}
         >
           <style>
             {`
@@ -1325,7 +1570,11 @@ export default function Checkout() {
         width={800}
         className="address-modal"
         style={{ top: 20 }}
-        bodyStyle={{ padding: '24px' }}
+        styles={{
+          body: {
+            padding: '24px'
+          }
+        }}
       >
         <div className="space-y-4">
           {/* Add New Address Button */}
@@ -1573,7 +1822,11 @@ export default function Checkout() {
         width={400}
         className="payment-modal"
         style={{ top: 20 }}
-        bodyStyle={{ padding: '24px' }}
+        styles={{
+          body: {
+            padding: '24px'
+          }
+        }}
       >
         <style>
           {`

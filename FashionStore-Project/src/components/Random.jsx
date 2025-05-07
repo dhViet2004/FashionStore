@@ -242,8 +242,16 @@ const Random = () => {
         centered
         width={700}
         closeIcon={<CloseOutlined style={{ fontSize: 32, color: '#ff4d4f' }} />}
-        bodyStyle={{ padding: 0, background: 'linear-gradient(135deg, #222 60%, #ffe600 100%)', borderRadius: 24 }}
-        maskStyle={{ background: 'rgba(0,0,0,0.5)' }}
+        styles={{
+          body: {
+            padding: 0,
+            background: 'linear-gradient(135deg, #222 60%, #ffe600 100%)',
+            borderRadius: 24
+          },
+          mask: {
+            background: 'rgba(0,0,0,0.5)'
+          }
+        }}
         className="lucky-wheel-modal"
       >
         <div className="p-10 flex flex-col items-center justify-center">

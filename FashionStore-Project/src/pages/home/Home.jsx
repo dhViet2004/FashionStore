@@ -41,7 +41,10 @@ const Home = () => {
         width={500}
         centered
         className="ad-modal"
-        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+        
+        mask={{
+          backgroundColor: 'rgba(0, 0, 0, 0.45)'
+        }}
         styles={{
           body: {
             padding: 0,

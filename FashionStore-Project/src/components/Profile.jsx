@@ -133,7 +133,7 @@ const Profile = () => {
     if (!dateString || dateString === "Not provided") return "Not provided";
     try {
       // Handle the specific format "HH:mm DD/MM/YYYY"
-      if (dateString.includes('/')) {
+      if (typeof dateString === 'string' && dateString.includes('/')) {
         const [time, date] = dateString.split(' ');
         const [hours, minutes] = time.split(':');
         const [day, month, year] = date.split('/');

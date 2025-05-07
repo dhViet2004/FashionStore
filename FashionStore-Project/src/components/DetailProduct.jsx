@@ -166,6 +166,95 @@ const DetailProduct = () => {
   };
 
   const handleBuyNow = async () => {
+    if (!product) return;
+
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để mua hàng');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    const selectedSize = product.sizes.find(sizeOption => sizeOption.size === size);
+    if (!selectedSize || quantity > selectedSize.stock) {
+      showNotification(`Số lượng vượt quá tồn kho (Còn ${selectedSize?.stock || 0} sản phẩm)`, 'warning');
+      return;
+    }
+
+    const newCartItem = {
+      productId: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: quantity,
+      size: size,
+      imageUrl: product.imageUrl,
+      stock: selectedSize.stock,
+      sizes: {
+        size: selectedSize.size,
+        stock: selectedSize.stock - quantity,
+      }
+    };
+
+    try {
+      // Thêm vào giỏ hàng
+      const success = await addToCart(newCartItem);
+      if (success) {
+        // Tạo đơn hàng ngay lập tức
+        const orderData = {
+          userId: user.id,
+          items: [{
+            ...newCartItem,
+            id: product.id
+          }],
+          total: product.price * quantity,
+          createdAt: new Date().toISOString()
+        };
+
+        // Gửi đơn hàng lên server
+        const response = await fetch('http://localhost:3001/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData)
+        });
+
+        if (!response.ok) throw new Error('Đặt hàng thất bại');
+
+        // Xóa sản phẩm khỏi giỏ hàng sau khi tạo đơn hàng thành công
+        const cartResponse = await fetch(`http://localhost:3001/cart?userId=${user.id}`);
+        const cartData = await cartResponse.json();
+        const cartItems = Array.isArray(cartData) ? cartData : cartData.cart || [];
+        const cartItemToDelete = cartItems.find(item => item.productId === product.id && item.size === size);
+        
+        if (cartItemToDelete) {
+          await fetch(`http://localhost:3001/cart/${cartItemToDelete.id}?userId=${user.id}`, {
+            method: 'DELETE',
+          });
+        }
+
+        // Chuyển đến trang thanh toán với định dạng dữ liệu giống Cart.jsx
+        navigate('/checkout', {
+          state: {
+            order: {
+              userId: user.id,
+              items: [{
+                ...newCartItem,
+                id: product.id
+              }],
+              total: product.price * quantity,
+              createdAt: new Date().toISOString()
+            },
+            cartItems: [{
+              ...newCartItem,
+              id: product.id
+            }]
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error in handleBuyNow:', error);
+      toast.error('Có lỗi xảy ra khi đặt hàng');
+    }
   };
 
   const handleCommentSubmit = async () => {

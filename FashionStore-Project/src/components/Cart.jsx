@@ -34,12 +34,25 @@ export default function Cart() {
 
   const fetchCartItems = async (userId) => {
     try {
+      console.log('=== Fetching Cart Items ===')
+      console.log('User ID:', userId)
+      
       const response = await fetch(`${API_URL}/cart?userId=${userId}`)
       if (!response.ok) {
         throw new Error('Failed to fetch cart items')
       }
       const data = await response.json()
+      console.log('Raw cart data:', data)
+      
       const items = Array.isArray(data) ? data : data.cart || []
+      console.log('Processed cart items:', items.map(item => ({
+        id: item.id,
+        productId: item.productId, // Check if there's a separate productId
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity
+      })))
+      
       setCartItems(items)
       setSelectedItems(items.map(item => item.id))
       setLoading(false)
@@ -331,30 +344,58 @@ export default function Cart() {
       return;
     }
 
-    // Lấy danh sách sản phẩm được chọn
+    console.log('=== Checkout Process ===')
+    console.log('Selected Items:', selectedItems)
+    console.log('Cart Items:', cartItems.map(item => ({
+      cartItemId: item.id,
+      productId: item.productId,
+      name: item.name,
+      size: item.size,
+      quantity: item.quantity
+    })))
+
     const orderItems = cartItems.filter(item => selectedItems.includes(item.id));
+    console.log('Filtered Order Items:', orderItems.map(item => ({
+      cartItemId: item.id,
+      productId: item.productId,
+      name: item.name,
+      size: item.size,
+      quantity: item.quantity
+    })))
+
     const orderData = {
       userId: user.id,
-      items: orderItems,
+      items: orderItems.map(item => ({
+        ...item,
+        cartItemId: item.id,        // Giữ lại ID của item trong giỏ hàng
+        id: item.productId          // ID của sản phẩm
+      })),
       total: total,
       voucher: appliedVoucher ? appliedVoucher.code : null,
       createdAt: new Date().toISOString()
     };
 
-    try {
-      // Gửi đơn hàng lên server
-      const response = await fetch(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData)
-      });
-      if (!response.ok) throw new Error('Đặt hàng thất bại');
+    console.log('Final Order Data:', {
+      userId: orderData.userId,
+      items: orderData.items.map(item => ({
+        id: item.id,
+        cartItemId: item.cartItemId,
+        name: item.name,
+        size: item.size,
+        quantity: item.quantity
+      })),
+      total: orderData.total
+    })
 
-      // Chuyển hướng sang trang thanh toán với thông tin đơn hàng
+    try {
+      // Chuyển đến trang thanh toán với thông tin đơn hàng
       navigate('/checkout', { 
         state: { 
           order: orderData,
-          cartItems: orderItems // Thêm thông tin giỏ hàng để xóa sau khi thanh toán thành công
+          cartItems: orderItems.map(item => ({
+            ...item,
+            id: item.productId
+          }))
         } 
       });
     } catch (error) {
@@ -660,7 +701,11 @@ export default function Cart() {
                   width={500}
                   className="voucher-modal"
                   style={{ top: 20 }}
-                  bodyStyle={{ padding: '24px' }}
+                  styles={{
+                    body: {
+                      padding: '24px'
+                    }
+                  }}
                 >
                   <style>
                     {`
