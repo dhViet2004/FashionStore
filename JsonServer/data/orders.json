@@ -2260,6 +2260,111 @@
       "status": "pending",
       "createdAt": "2025-05-07T09:05:50.855Z",
       "id": 69
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 15,
+          "sizes": {
+            "size": "M",
+            "stock": 14
+          },
+          "userId": 8,
+          "id": 6
+        }
+      ],
+      "total": 330000,
+      "voucher": null,
+      "createdAt": "2025-05-07T09:08:46.975Z",
+      "id": 70
+    },
+    {
+      "userId": 8,
+      "items": [
+        {
+          "productId": 2,
+          "name": "Slim Fit Jeans",
+          "price": 300000,
+          "quantity": 1,
+          "size": "M",
+          "imageUrl": "https://res.cloudinary.com/dh1o42tjk/image/upload/v1744644438/Vay-Trung-Den_gdsj9u.jpg",
+          "stock": 15,
+          "sizes": {
+            "size": "M",
+            "stock": 14
+          },
+          "userId": 8,
+          "id": 6
+        }
+      ],
+      "shippingAddress": {
+        "_id": "1746608611588",
+        "name": "Đặng Hoàng Việt",
+        "phone": "0364601530",
+        "email": "dviet037@gmail.com",
+        "province": "Tỉnh Hà Giang",
+        "district": "Huyện Mèo Vạc",
+        "ward": "Xã Pải Lủng",
+        "address": "TP.Hồ Chí Minh",
+        "note": "gần ngân hàng",
+        "userId": 8,
+        "isDefault": true
+      },
+      "shippingMethod": {
+        "label": "Giao hàng tiêu chuẩn",
+        "value": "standard",
+        "fee": 30000,
+        "estimate": "3-5 ngày",
+        "icon": {
+          "key": null,
+          "ref": null,
+          "props": {
+            "className": "text-blue-500"
+          },
+          "_owner": null,
+          "_store": {}
+        }
+      },
+      "paymentMethod": {
+        "label": "Thanh toán khi nhận hàng (COD)",
+        "value": "cod",
+        "icon": {
+          "key": null,
+          "ref": null,
+          "props": {
+            "className": "text-blue-500"
+          },
+          "_owner": null,
+          "_store": {}
+        }
+      },
+      "voucher": null,
+      "subtotal": 300000,
+      "shippingFee": 30000,
+      "discount": 0,
+      "total": 330000,
+      "status": "delivered",
+      "createdAt": "2025-05-07T09:08:48.975Z",
+      "id": 71,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "16:15 07/05/2025",
+          "note": "Status changed to confirmed"
+        },
+        {
+          "status": "delivered",
+          "timestamp": "16:16 07/05/2025",
+          "note": "Status changed to delivered"
+        }
+      ]
     }
   ]
 }
