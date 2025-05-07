@@ -2,18 +2,29 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const Categories = () => {
-  const [favoriteImage, setFavoriteImage] = useState("favorites.jpg"); // Ảnh mặc định cho Yêu thích
-  const [jeansImage, setJeansImage] = useState("jeans.jpg"); // Ảnh mặc định cho Jeans
-  const [jacketsImage, setJacketsImage] = useState("jackets.jpg"); // Ảnh mặc định cho Jackets
-  const [shoesImage, setShoesImage] = useState("shoes.jpg"); // Ảnh mặc định cho Shoes
+  const [favoriteImage, setFavoriteImage] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [favoriteCount, setFavoriteCount] = useState(0);
 
   useEffect(() => {
     // Lấy thông tin người dùng từ localStorage
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.favourite && user.favourite.length > 0) {
-      // Lấy ảnh đầu tiên trong danh sách yêu thích
-      setFavoriteImage(user.favourite[0]?.imageUrl || "favorites.jpg");
+    let imageUrl = "https://res.cloudinary.com/dzljgccna/image/upload/v1746520409/fashsionStore/fashsion%20store/mbgwxhld6p5ft1psmqeq.webp";
+
+    if (user && user.favorite && user.favorite.length > 0) {
+      // Tìm sản phẩm đầu tiên có đầy đủ thông tin (không phải chỉ là ID)
+      const firstFullProduct = user.favorite.find(item => typeof item === 'object' && item.imageUrl);
+      if (firstFullProduct) {
+        imageUrl = firstFullProduct.imageUrl;
+      }
+      // Đếm số sản phẩm yêu thích có đầy đủ thông tin
+      const fullProducts = user.favorite.filter(item => typeof item === 'object' && item.imageUrl);
+      setFavoriteCount(fullProducts.length);
+    } else {
+      setFavoriteCount(0);
     }
+
+    setFavoriteImage(imageUrl);
 
     // Fetch dữ liệu sản phẩm từ API
     const fetchProducts = async () => {
@@ -21,52 +32,51 @@ const Categories = () => {
         const response = await fetch('http://localhost:3001/products');
         const products = await response.json();
 
-        // Lấy ảnh đầu tiên của từng loại sản phẩm
-        const jeans = products.find((item) => item.category === 'Jeans');
-        const jackets = products.find((item) => item.category === 'Jackets');
-        const shoes = products.find((item) => item.category === 'Shoes');
+        // Lấy danh sách category không trùng lặp
+        const uniqueCategories = [...new Set(products.map(product => product.category))];
+        
+        // Tạo mảng categories với ảnh đầu tiên của mỗi category
+        const categoriesWithImages = uniqueCategories.map(category => {
+          const firstProduct = products.find(product => product.category === category);
+          return {
+            id: category.toLowerCase(),
+            name: category,
+            image: firstProduct?.imageUrl || "https://res.cloudinary.com/dzljgccna/image/upload/v1746520409/fashsionStore/fashsion%20store/mbgwxhld6p5ft1psmqeq.webp",
+            description: `Khám phá các sản phẩm ${category.toLowerCase()} thời trang`,
+            link: `/products?category=${category.toLowerCase()}`
+          };
+        });
 
-        setJeansImage(jeans?.imageUrl || "jeans.jpg");
-        setJacketsImage(jackets?.imageUrl || "jackets.jpg");
-        setShoesImage(shoes?.imageUrl || "shoes.jpg");
+        // Thêm mục Favorite vào đầu danh sách
+        const allCategories = [
+          {
+            id: "favorites",
+            name: "Yêu thích",
+            image: imageUrl,
+            description: "Xem các sản phẩm bạn đã yêu thích",
+            link: "/favorites"
+          },
+          ...categoriesWithImages
+        ];
+
+        setCategories(allCategories);
       } catch (error) {
         console.error('Lỗi khi fetch dữ liệu sản phẩm:', error);
+        // Nếu có lỗi, chỉ hiển thị mục Favorite
+        setCategories([
+          {
+            id: "favorites",
+            name: "Yêu thích",
+            image: imageUrl,
+            description: "Xem các sản phẩm bạn đã yêu thích",
+            link: "/favorites"
+          }
+        ]);
       }
     };
 
     fetchProducts();
-  }, []);
-
-  const categories = [
-    {
-      id: 1,
-      name: "Yêu thích",
-      image: favoriteImage, // Sử dụng ảnh từ danh sách yêu thích
-      description: "Xem các sản phẩm bạn đã yêu thích",
-      link: "/favorites"
-    },
-    {
-      id: 2,
-      name: "Jeans",
-      image: jeansImage, // Sử dụng ảnh từ API
-      description: "Khám phá các sản phẩm quần Jeans thời trang",
-      link: "/products?category=jeans"
-    },
-    {
-      id: 3,
-      name: "Jackets",
-      image: jacketsImage, // Sử dụng ảnh từ API
-      description: "Khám phá các sản phẩm áo khoác phong cách",
-      link: "/products?category=jackets"
-    },
-    {
-      id: 4,
-      name: "Shoes",
-      image: shoesImage, // Sử dụng ảnh từ API
-      description: "Khám phá các sản phẩm giày thời trang",
-      link: "/products?category=shoes"
-    }
-  ];
+  }, [favoriteImage]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -76,14 +86,22 @@ const Categories = () => {
           <Link
             key={category.id}
             to={category.link}
-            className="group"
+            className="group relative"
           >
             <div className="bg-white rounded-lg shadow-md overflow-hidden transition-transform duration-300 group-hover:transform group-hover:scale-105">
+              {category.id === "favorites" && favoriteCount > 0 && (
+                <div className="absolute top-2 right-2 bg-pink-500 text-white rounded-full px-3 py-1 text-sm font-semibold z-10">
+                  {favoriteCount}
+                </div>
+              )}
               <div className="h-48 bg-gray-200 flex items-center justify-center">
                 <img
                   src={category.image}
                   alt={category.name}
                   className="h-full w-full object-cover"
+                  onError={(e) => {
+                    e.target.src = "https://res.cloudinary.com/dzljgccna/image/upload/v1746520409/fashsionStore/fashsion%20store/mbgwxhld6p5ft1psmqeq.webp";
+                  }}
                 />
               </div>
               <div className="p-4">

@@ -29,8 +29,8 @@ const ProductCard = ({ product, onPayNow }) => {
   useEffect(() => {
     // Kiểm tra xem sản phẩm có nằm trong danh sách yêu thích không
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.favourite) {
-      const isFav = user.favourite.some((item) => item.id === product.id);
+    if (user && user.favorite) {
+      const isFav = user.favorite.some(item => item.id === product.id);
       setIsFavorite(isFav);
     }
   }, [product.id]);
@@ -115,7 +115,7 @@ const ProductCard = ({ product, onPayNow }) => {
     setIsModalVisible(false);
   };
 
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = async () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       message.error('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích');
@@ -124,37 +124,51 @@ const ProductCard = ({ product, onPayNow }) => {
       return;
     }
 
-    const updatedFavorites = user.favourite || [];
-    const isFav = updatedFavorites.some((item) => item.id === product.id);
+    try {
+      // Lấy thông tin user từ API
+      const response = await axios.get(`http://localhost:3001/users/${user.id}`);
+      const userData = response.data;
 
-    if (isFav) {
-      // Nếu sản phẩm đã có trong danh sách yêu thích, xóa nó
-      const newFavorites = updatedFavorites.filter((item) => item.id !== product.id);
-      user.favourite = newFavorites;
-      setIsFavorite(false);
-      showNotification(
-        <div className="flex items-center">
-          <FaHeart className="text-gray-400 mr-2" />
-          <p className="font-medium">{product.name} đã được xóa khỏi danh sách yêu thích!</p>
-        </div>,
-        'info'
-      );
-    } else {
-      // Nếu sản phẩm chưa có trong danh sách yêu thích, thêm nó
-      updatedFavorites.push(product);
-      user.favourite = updatedFavorites;
-      setIsFavorite(true);
-      showNotification(
-        <div className="flex items-center">
-          <FaHeart className="text-pink-500 mr-2" />
-          <p className="font-medium">{product.name} đã được thêm vào danh sách yêu thích!</p>
-        </div>,
-        'success'
-      );
+      // Kiểm tra xem trường favorite đã tồn tại chưa
+      if (!userData.favorite) {
+        userData.favorite = [];
+      }
+
+      const isFav = userData.favorite.some(item => item.id === product.id);
+
+      if (isFav) {
+        // Xóa sản phẩm khỏi danh sách yêu thích
+        userData.favorite = userData.favorite.filter(item => item.id !== product.id);
+        setIsFavorite(false);
+        showNotification(
+          <div className="flex items-center">
+            <FaHeart className="text-gray-400 mr-2" />
+            <p className="font-medium">{product.name} đã được xóa khỏi danh sách yêu thích!</p>
+          </div>,
+          'success'
+        );
+      } else {
+        // Thêm sản phẩm vào danh sách yêu thích
+        userData.favorite.push(product);
+        setIsFavorite(true);
+        showNotification(
+          <div className="flex items-center">
+            <FaHeart className="text-pink-500 mr-2" />
+            <p className="font-medium">{product.name} đã được thêm vào danh sách yêu thích!</p>
+          </div>,
+          'success'
+        );
+      }
+
+      // Cập nhật user trên server
+      await axios.put(`http://localhost:3001/users/${user.id}`, userData);
+
+      // Cập nhật localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+    } catch (error) {
+      console.error('Error updating favorites:', error);
+      message.error('Có lỗi xảy ra khi cập nhật danh sách yêu thích');
     }
-
-    // Cập nhật localStorage
-    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const renderStars = (rating) => {
@@ -201,8 +215,8 @@ const ProductCard = ({ product, onPayNow }) => {
             <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
             <p className="text-sm sm:text-base text-blue-600 font-bold">{formatCurrency(product.price)}</p>
             <span
-              className={`absolute right-2 top-2 text-xl sm:text-2xl cursor-pointer ${
-                isFavorite ? 'text-pink-500' : 'text-gray-400'
+              className={`absolute right-2 top-2 text-xl sm:text-2xl cursor-pointer transition-colors duration-300 ${
+                isFavorite ? 'text-pink-500 hover:text-pink-600' : 'text-gray-400 hover:text-gray-500'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
