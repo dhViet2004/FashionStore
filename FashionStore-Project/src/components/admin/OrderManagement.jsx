@@ -77,7 +77,7 @@ const OrderManagement = () => {
       case 'confirmed':
         return <CheckCircleOutlined />;
       case 'processing':
-        return <SyncOutlined spin />;
+        return <SyncOutlined />;
       case 'shipped':
         return <CarOutlined />;
       case 'delivered':
