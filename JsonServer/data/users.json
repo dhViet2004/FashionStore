@@ -90,6 +90,19 @@
           "ward": "",
           "userId": 8,
           "isDefault": false
+        },
+        {
+          "_id": "1746608611588",
+          "name": "Đặng Hoàng Việt",
+          "phone": "0364601530",
+          "email": "dviet037@gmail.com",
+          "province": "Tỉnh Hà Giang",
+          "district": "Huyện Mèo Vạc",
+          "ward": "Xã Pải Lủng",
+          "address": "TP.Hồ Chí Minh",
+          "note": "gần ngân hàng",
+          "userId": 8,
+          "isDefault": true
         }
       ]
     },
@@ -124,28 +137,14 @@
       "id": 10,
       "addresses": [
         {
-          "_id": "1746595657697",
-          "name": "Lương Minh Tân",
+          "name": "Luong Minh Tan",
           "phone": "0852997990",
-          "email": "luongtan204@gmail.com",
-          "province": "Tỉnh Hà Giang",
-          "district": "Huyện Quản Bạ",
-          "ward": "Xã Tùng Vài",
-          "address": "Tân Trụ",
-          "note": "dd",
-          "userId": 10,
-          "isDefault": false
-        },
-        {
-          "_id": "1746595720408",
-          "name": "Lương Minh Tân",
-          "phone": "0852997990",
-          "email": "luongtan204@gmail.com",
-          "province": "Tỉnh Hà Giang",
-          "district": "Huyện Quản Bạ",
-          "ward": "Xã Tùng Vài",
-          "address": "Tân Trụ",
-          "note": "dd",
+          "email": "luogtan204@gmail.com",
+          "province": "Tỉnh Hoà Bình",
+          "district": "Huyện Cao Phong",
+          "address": "ddd",
+          "note": "",
+          "ward": "Xã Thung Nai",
           "userId": 10,
           "isDefault": true
         }
