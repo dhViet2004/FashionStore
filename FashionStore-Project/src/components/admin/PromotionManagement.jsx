@@ -16,17 +16,20 @@ import {
   PlusOutlined, 
   EditFilled, 
   DeleteOutlined,
-  TagsOutlined
+  TagsOutlined,
+  ExclamationCircleFilled
 } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { Option } = Select;
+const { confirm } = Modal;
 
 const PromotionManagement = () => {
   const [promotions, setPromotions] = useState([]);
   const [isPromotionModalVisible, setIsPromotionModalVisible] = useState(false);
   const [editingPromotion, setEditingPromotion] = useState(null);
   const [promotionForm] = Form.useForm();
+  const [discountType, setDiscountType] = useState('percentage');
 
   useEffect(() => {
     fetchVouchers();
@@ -87,6 +90,7 @@ const PromotionManagement = () => {
       setIsPromotionModalVisible(false);
       promotionForm.resetFields();
       setEditingPromotion(null);
+      setDiscountType('percentage');
     } catch (error) {
       console.error('Error saving voucher:', error);
       message.error('Error saving voucher');
@@ -94,19 +98,29 @@ const PromotionManagement = () => {
   };
 
   const handleDeletePromotion = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:3001/vouchers/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (response.ok) {
-        message.success('Voucher deleted successfully');
-        setPromotions(promotions.filter(p => p.id !== id));
-      }
-    } catch (error) {
-      console.error('Error deleting voucher:', error);
-      message.error('Error deleting voucher');
-    }
+    confirm({
+      title: 'Are you sure you want to delete this voucher?',
+      icon: <ExclamationCircleFilled />,
+      content: 'This action cannot be undone.',
+      okText: 'Yes, delete it',
+      okType: 'danger',
+      cancelText: 'No, cancel',
+      onOk: async () => {
+        try {
+          const response = await fetch(`http://localhost:3001/vouchers/${id}`, {
+            method: 'DELETE',
+          });
+          
+          if (response.ok) {
+            message.success('Voucher deleted successfully');
+            setPromotions(promotions.filter(p => p.id !== id));
+          }
+        } catch (error) {
+          console.error('Error deleting voucher:', error);
+          message.error('Error deleting voucher');
+        }
+      },
+    });
   };
 
   const handleEditPromotion = (promotion) => {
@@ -240,6 +254,7 @@ const PromotionManagement = () => {
           setIsPromotionModalVisible(false);
           promotionForm.resetFields();
           setEditingPromotion(null);
+          setDiscountType('percentage');
         }}
         width="95%"
         style={{ maxWidth: '600px' }}
@@ -260,8 +275,9 @@ const PromotionManagement = () => {
             name="type"
             label="Discount Type"
             rules={[{ required: true, message: 'Please select the discount type!' }]}
+            initialValue="percentage"
           >
-            <Select>
+            <Select onChange={(value) => setDiscountType(value)}>
               <Option value="percentage">Percentage</Option>
               <Option value="fixed">Fixed Amount</Option>
             </Select>
@@ -293,15 +309,7 @@ const PromotionManagement = () => {
           >
             <Input 
               type="number" 
-              addonAfter={({ getFieldValue }) => getFieldValue('type') === 'percentage' ? '%' : 'VNĐ'}
-              formatter={(value, { getFieldValue }) => {
-                const type = getFieldValue('type');
-                if (type === 'percentage') {
-                  return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-                }
-                return `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-              }}
-              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
+              addonAfter={discountType === 'percentage' ? '%' : 'VNĐ'}
             />
           </Form.Item>
           
@@ -326,8 +334,6 @@ const PromotionManagement = () => {
               type="number" 
               min={0} 
               addonAfter="VNĐ"
-              formatter={(value) => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => value.replace(/\$\s?|(,*)/g, '')}
             />
           </Form.Item>
           

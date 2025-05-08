@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaStar, FaRegStar, FaUserCircle, FaArrowLeft   } from 'react-icons/fa'; // Import icon mặc định
+import { FaStar, FaRegStar, FaUserCircle, FaArrowLeft, FaHeart, FaRegHeart } from 'react-icons/fa'; // Import icon mặc định
 import { useCart } from '../context/CartContext';
 import { toast } from 'sonner';
 import { useNotify } from '../context/notifyContext';
@@ -24,6 +24,7 @@ const DetailProduct = () => {
   const [hasPurchased, setHasPurchased] = useState(false); // Kiểm tra quyền bình luận
   const [calculatedRating, setCalculatedRating] = useState(0);
   const [calculatedReviews, setCalculatedReviews] = useState(0);
+  const [isFavorite, setIsFavorite] = useState(false);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -112,6 +113,22 @@ const DetailProduct = () => {
       }));
     }
   }, [calculatedRating, calculatedReviews]);
+
+  useEffect(() => {
+    const checkFavoriteStatus = () => {
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (user && user.favorite) {
+        const isFav = user.favorite.some(item => 
+          typeof item === 'object' && item.id === parseInt(productId)
+        );
+        setIsFavorite(isFav);
+      }
+    };
+
+    if (product) {
+      checkFavoriteStatus();
+    }
+  }, [product, productId]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -287,6 +304,63 @@ const DetailProduct = () => {
     }
   };
 
+  const toggleFavorite = async () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (!user) {
+      toast.error('Vui lòng đăng nhập để thêm sản phẩm vào yêu thích');
+      localStorage.setItem('redirectAfterLogin', window.location.pathname);
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/users/${user.id}`);
+      const userData = await response.json();
+      
+      let updatedFavorites = [...(userData.favorite || [])];
+      
+      if (isFavorite) {
+        // Xóa sản phẩm khỏi danh sách yêu thích
+        updatedFavorites = updatedFavorites.filter(item => 
+          typeof item === 'object' ? item.id !== parseInt(productId) : true
+        );
+      } else {
+        // Thêm sản phẩm vào danh sách yêu thích
+        updatedFavorites.push({
+          id: parseInt(productId),
+          name: product.name,
+          price: product.price,
+          imageUrl: product.imageUrl,
+          category: product.category
+        });
+      }
+
+      // Cập nhật danh sách yêu thích trên server
+      const updateResponse = await fetch(`http://localhost:3001/users/${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ favorite: updatedFavorites }),
+      });
+
+      if (updateResponse.ok) {
+        // Cập nhật localStorage
+        const updatedUser = { ...user, favorite: updatedFavorites };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setIsFavorite(!isFavorite);
+        
+        showNotification(
+          isFavorite ? 'Đã xóa khỏi danh sách yêu thích' : 'Đã thêm vào danh sách yêu thích',
+          'success'
+        );
+      }
+    } catch (error) {
+      console.error('Error updating favorites:', error);
+      showNotification('Có lỗi xảy ra khi cập nhật danh sách yêu thích', 'error');
+    }
+  };
+
   const renderStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
@@ -338,8 +412,18 @@ const DetailProduct = () => {
         <FaArrowLeft className="text-xl text-gray-600 hover:text-gray-800" />
       </button>
 
-      <div className="flex flex-col md:flex-row items-center bg-white p-6 pt-2 rounded-lg shadow-lg mb-8 ">
-        <div className="md:w-1/4 mb-6 md:mb-0">
+      <div className="flex flex-col md:flex-row items-center bg-white p-6 pt-2 rounded-lg shadow-lg mb-8 relative">
+      <button
+            onClick={toggleFavorite}
+            className="absolute top-2 right-2 z-10 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-all duration-300"
+          >
+            {isFavorite ? (
+              <FaHeart className="text-pink-500 text-xl" />
+            ) : (
+              <FaRegHeart className="text-gray-500 text-xl" />
+            )}
+          </button>
+        <div className="md:w-1/4 mb-6 md:mb-0 relative">
           <img
             src={product.imageUrl}
             alt={product.name}
