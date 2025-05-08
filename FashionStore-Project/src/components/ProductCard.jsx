@@ -25,13 +25,12 @@ const ProductCard = ({ product, onPayNow }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [rating, setRating] = useState(0);
   const [reviewCount, setReviewCount] = useState(0);
-  const [isBuyNowModalVisible, setIsBuyNowModalVisible] = useState(false);
 
   useEffect(() => {
     // Kiểm tra xem sản phẩm có nằm trong danh sách yêu thích không
     const user = JSON.parse(localStorage.getItem('user'));
-    if (user && user.favorite) {
-      const isFav = user.favorite.some(item => item.id === product.id);
+    if (user && user.favourite) {
+      const isFav = user.favourite.some((item) => item.id === product.id);
       setIsFavorite(isFav);
     }
   }, [product.id]);
@@ -116,7 +115,7 @@ const ProductCard = ({ product, onPayNow }) => {
     setIsModalVisible(false);
   };
 
-  const handleToggleFavorite = async () => {
+  const handleToggleFavorite = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) {
       message.error('Vui lòng đăng nhập để thêm sản phẩm vào danh sách yêu thích');
@@ -125,51 +124,37 @@ const ProductCard = ({ product, onPayNow }) => {
       return;
     }
 
-    try {
-      // Lấy thông tin user từ API
-      const response = await axios.get(`http://localhost:3001/users/${user.id}`);
-      const userData = response.data;
+    const updatedFavorites = user.favourite || [];
+    const isFav = updatedFavorites.some((item) => item.id === product.id);
 
-      // Kiểm tra xem trường favorite đã tồn tại chưa
-      if (!userData.favorite) {
-        userData.favorite = [];
-      }
-
-      const isFav = userData.favorite.some(item => item.id === product.id);
-
-      if (isFav) {
-        // Xóa sản phẩm khỏi danh sách yêu thích
-        userData.favorite = userData.favorite.filter(item => item.id !== product.id);
-        setIsFavorite(false);
-        showNotification(
-          <div className="flex items-center">
-            <FaHeart className="text-gray-400 mr-2" />
-            <p className="font-medium">{product.name} đã được xóa khỏi danh sách yêu thích!</p>
-          </div>,
-          'success'
-        );
-      } else {
-        // Thêm sản phẩm vào danh sách yêu thích
-        userData.favorite.push(product);
-        setIsFavorite(true);
-        showNotification(
-          <div className="flex items-center">
-            <FaHeart className="text-pink-500 mr-2" />
-            <p className="font-medium">{product.name} đã được thêm vào danh sách yêu thích!</p>
-          </div>,
-          'success'
-        );
-      }
-
-      // Cập nhật user trên server
-      await axios.put(`http://localhost:3001/users/${user.id}`, userData);
-
-      // Cập nhật localStorage
-      localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error) {
-      console.error('Error updating favorites:', error);
-      message.error('Có lỗi xảy ra khi cập nhật danh sách yêu thích');
+    if (isFav) {
+      // Nếu sản phẩm đã có trong danh sách yêu thích, xóa nó
+      const newFavorites = updatedFavorites.filter((item) => item.id !== product.id);
+      user.favourite = newFavorites;
+      setIsFavorite(false);
+      showNotification(
+        <div className="flex items-center">
+          <FaHeart className="text-gray-400 mr-2" />
+          <p className="font-medium">{product.name} đã được xóa khỏi danh sách yêu thích!</p>
+        </div>,
+        'info'
+      );
+    } else {
+      // Nếu sản phẩm chưa có trong danh sách yêu thích, thêm nó
+      updatedFavorites.push(product);
+      user.favourite = updatedFavorites;
+      setIsFavorite(true);
+      showNotification(
+        <div className="flex items-center">
+          <FaHeart className="text-pink-500 mr-2" />
+          <p className="font-medium">{product.name} đã được thêm vào danh sách yêu thích!</p>
+        </div>,
+        'success'
+      );
     }
+
+    // Cập nhật localStorage
+    localStorage.setItem('user', JSON.stringify(user));
   };
 
   const renderStars = (rating) => {
@@ -302,8 +287,8 @@ const ProductCard = ({ product, onPayNow }) => {
             <h3 className="text-base sm:text-lg font-semibold text-gray-800 line-clamp-1">{product.name}</h3>
             <p className="text-sm sm:text-base text-blue-600 font-bold">{formatCurrency(product.price)}</p>
             <span
-              className={`absolute right-2 top-2 text-xl sm:text-2xl cursor-pointer transition-colors duration-300 ${
-                isFavorite ? 'text-pink-500 hover:text-pink-600' : 'text-gray-400 hover:text-gray-500'
+              className={`absolute right-2 top-2 text-xl sm:text-2xl cursor-pointer ${
+                isFavorite ? 'text-pink-500' : 'text-gray-400'
               }`}
               onClick={(e) => {
                 e.stopPropagation();
@@ -355,41 +340,6 @@ const ProductCard = ({ product, onPayNow }) => {
           </div>
         </div>
       </div>
-
-      <Modal
-        title="Chọn size để mua ngay"
-        open={isBuyNowModalVisible}
-        onOk={handleBuyNowConfirm}
-        onCancel={() => setIsBuyNowModalVisible(false)}
-        footer={[
-          <Button key="cancel" onClick={() => setIsBuyNowModalVisible(false)}>
-            Hủy
-          </Button>,
-          <Button key="submit" type="primary" onClick={handleBuyNowConfirm}>
-            Mua ngay
-          </Button>,
-        ]}
-      >
-        <div className="flex flex-col space-y-4">
-          <div className="flex items-center">
-            <span className="text-gray-600 mr-2">Size:</span>
-            <select 
-              className="border border-gray-300 rounded-md p-2 hover:cursor-pointer"
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
-            >
-              {product.sizes.map((sizeOption, index) => (
-                <option key={index} value={sizeOption.size}>
-                  {sizeOption.size}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="text-sm text-gray-500">
-            Số lượng còn lại: {product.sizes.find(s => s.size === selectedSize)?.stock || 0}
-          </div>
-        </div>
-      </Modal>
 
       <Modal
         title="Chọn size"

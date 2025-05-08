@@ -13,7 +13,7 @@
         },
         {
           "size": "M",
-          "stock": 14
+          "stock": 10
         },
         {
           "size": "L",
@@ -36,7 +36,7 @@
           "stock": 3
         }
       ],
-      "stock": 74,
+      "stock": 70,
       "rating": 0,
       "reviews": 0,
       "id": 2
@@ -54,7 +54,7 @@
         },
         {
           "size": "M",
-          "stock": 5
+          "stock": 3
         },
         {
           "size": "L",
@@ -73,7 +73,7 @@
           "stock": 1
         }
       ],
-      "stock": 27,
+      "stock": 25,
       "rating": 0,
       "reviews": 0,
       "id": 3

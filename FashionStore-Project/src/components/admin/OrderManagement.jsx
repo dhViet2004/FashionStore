@@ -117,6 +117,28 @@ const OrderManagement = () => {
             }]
       };
 
+      // If order has a voucher and payment is completed, update voucher usage
+      if (order.voucher && order.payment?.status === 'completed') {
+        try {
+          const voucherResponse = await fetch(`http://localhost:3001/vouchers/${order.voucher.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...order.voucher,
+              usedBy: [...(order.voucher.usedBy || []), order.userId]
+            })
+          });
+
+          if (!voucherResponse.ok) {
+            console.error('Failed to update voucher usage');
+          }
+        } catch (error) {
+          console.error('Error updating voucher usage:', error);
+        }
+      }
+
       const response = await fetch(`http://localhost:3001/orders/${orderId}`, {
         method: 'PUT',
         headers: {

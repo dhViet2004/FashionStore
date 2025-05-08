@@ -807,6 +807,28 @@ export default function Checkout() {
       setOrderId(newOrder.id);
       setOrderSuccess(true);
 
+      // Update voucher usage if a voucher was applied
+      if (appliedVoucher) {
+        try {
+          const voucherResponse = await fetch(`${API_URL}/vouchers/${appliedVoucher.id}`, {
+            method: 'PATCH',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              ...appliedVoucher,
+              usedBy: [...(appliedVoucher.usedBy || []), user.id]
+            })
+          });
+
+          if (!voucherResponse.ok) {
+            console.error('Failed to update voucher usage');
+          }
+        } catch (error) {
+          console.error('Error updating voucher usage:', error);
+        }
+      }
+
       // Update product stock
       for (const item of order.items) {
         try {
