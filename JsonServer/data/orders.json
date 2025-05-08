@@ -2736,9 +2736,16 @@
       "shippingFee": 30000,
       "discount": 0,
       "total": 330000,
-      "status": "pending",
+      "status": "confirmed",
       "createdAt": "15:39 08/05/2025",
-      "id": 75
+      "id": 75,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "15:54 08/05/2025",
+          "note": "Status changed to confirmed"
+        }
+      ]
     },
     {
       "userId": 10,
@@ -2818,9 +2825,16 @@
       "shippingFee": 30000,
       "discount": 50000,
       "total": 270000,
-      "status": "pending",
+      "status": "confirmed",
       "createdAt": "15:40 08/05/2025",
-      "id": 76
+      "id": 76,
+      "statusHistory": [
+        {
+          "status": "confirmed",
+          "timestamp": "15:54 08/05/2025",
+          "note": "Status changed to confirmed"
+        }
+      ]
     }
   ]
 }
